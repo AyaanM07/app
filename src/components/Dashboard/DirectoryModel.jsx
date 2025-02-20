@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
 const DirectoryModal = ({ classData, onClose }) => {
   const [folderId, setFolderId] = useState("");
@@ -23,26 +23,42 @@ const DirectoryModal = ({ classData, onClose }) => {
 
   // Save configuration
   const handlePostQuestions = async () => {
-    console.log(folderId, group6Code);
+    console.log("Sending request with:", { folderId, group6Code, group4Code });
     try {
-      const response = await fetch("https://script.google.com/macros/s/AKfycbzJsyvs69Lo_M9Wtn0m_V1DrJqep8EkjQP6f7SYUMtdasOxsrg4gHsFYxmPonp78tx6cw/exec", {
+      // Create the payload
+      const payload = {
+        action: "postQuestions",
+        data: {
+          folderId: folderId,
+          classroomIds: [group6Code, group4Code].filter(Boolean), // filter out empty codes
+        },
+      };
+
+      console.log("Sending payload:", JSON.stringify(payload));
+
+      const response = await fetch("/api/questions", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "postQuestions",
-          data: {
-            folderId: folderId, // From user input
-            classroomIds: [group6Code, group4Code], // From user input
-          },
-        }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
-      const result = await response.json();
-      if (!result.success) throw new Error(result.error);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      alert("Questions posted to Google Classroom!");
-      onClose();
+      const result = await response.json();
+      console.log("Response from server:", result);
+
+      if (result.success) {
+        alert(result.message || "Request sent successfully!");
+        onClose();
+      } else {
+        throw new Error(result.error || "Failed to process request");
+      }
     } catch (error) {
+      console.error("Error sending request:", error);
       alert(`Error: ${error.message}`);
     }
   };
