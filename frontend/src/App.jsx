@@ -5,24 +5,17 @@ import Sidebar from "./components/Sidebar";
 import FloatingShape from "./components/FloatingShapes";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
-import EmailVerificationPage from "./pages/EmailVerificationPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { useEffect } from "react";
 import LoadingSpinner from "./components/AuthPage/LoadingSpinner";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // Protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
-  }
-
-  if (!user?.isVerified) {
-    return <Navigate to="/verify-email" replace />;
   }
 
   return children;
@@ -30,9 +23,9 @@ const ProtectedRoute = ({ children }) => {
 
 // Redirect authenticated users to the dashboard
 const RedirectAuthenticatedUser = ({ children }) => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
-  if (isAuthenticated && user?.isVerified) {
+  if (isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
@@ -111,23 +104,6 @@ function App() {
           element={
             <RedirectAuthenticatedUser>
               <LoginPage />
-            </RedirectAuthenticatedUser>
-          }
-        />
-        <Route path="/verify-email" element={<EmailVerificationPage />} />
-        <Route
-          path="/forgot-password"
-          element={
-            <RedirectAuthenticatedUser>
-              <ForgotPasswordPage />
-            </RedirectAuthenticatedUser>
-          }
-        />
-        <Route
-          path="/reset-password/:token"
-          element={
-            <RedirectAuthenticatedUser>
-              <ResetPasswordPage />
             </RedirectAuthenticatedUser>
           }
         />

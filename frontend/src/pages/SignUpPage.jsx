@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import Input from "../components/AuthPage/Input";
 import { Loader, Lock, Mail, User } from "lucide-react";
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import PasswordStrengthMeter from "../components/AuthPage/PasswordStrengthMeter";
 import { useAuthStore } from "../store/authStore";
 import AuthPageWrapper from "../components/AuthPage/AuthPageWrapper";
@@ -11,7 +11,6 @@ const SignUpPage = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const navigate = useNavigate();
   const { signup, error, isLoading } = useAuthStore();
 
   const handleSignUp = async (e) => {
@@ -19,7 +18,8 @@ const SignUpPage = () => {
 
     try {
       await signup(email, password, name);
-      navigate("/verify-email");
+      // After successful signup, user will be automatically redirected to dashboard
+      // by the RedirectAuthenticatedUser component
     } catch (error) {
       console.log(error);
     }
