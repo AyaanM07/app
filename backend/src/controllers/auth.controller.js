@@ -1,6 +1,6 @@
 import bcryptjs from "bcryptjs";
 import crypto from "crypto";
-import { User } from "../../user.data.js";
+import { User } from "../models/user.data.js";
 import { generateTokenAndSetCookie } from "../utils/generateTokenAndSetCookie.js";
 import {
   sendPasswordResetEmail,

@@ -26,7 +26,7 @@ const userSchema = new mongoose.Schema(
     resetPasswordToken: String,
     resetPasswordExpiresAt: Date,
     verificationToken: String,
-    verificationTokenExpiresAt: Date, //can later add classrooms ids specific to user when integrating with automated posting for google classroom
+    verificationTokenExpiresAt: Date, // can later add classrooms ids specific to user when integrating with automated posting for google classroom
     settings: {
       classConfigs: [
         {
