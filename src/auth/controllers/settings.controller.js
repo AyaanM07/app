@@ -8,7 +8,7 @@ export const updateUserSettings = async (req, res) => {
     const user = await User.findByIdAndUpdate(
       userId,
       { settings },
-      { new: true }
+      { new: true },
     ).select("-password");
 
     res.json({ success: true, user });

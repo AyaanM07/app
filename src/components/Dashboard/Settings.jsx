@@ -12,7 +12,8 @@ const SettingsModal = ({ onClose }) => {
   // Load existing settings when modal opens
   useEffect(() => {
     if (user?.settings?.globalConfig) {
-      const { postingTime, startingQuestion, sheetsId } = user.settings.globalConfig;
+      const { postingTime, startingQuestion, sheetsId } =
+        user.settings.globalConfig;
       setPostingTime(postingTime || "09:00");
       setStartingQuestion(startingQuestion || "");
       setSheetsId(sheetsId || "");
@@ -36,16 +37,19 @@ const SettingsModal = ({ onClose }) => {
 
   const handleSave = async () => {
     try {
-      const currentSettings = user?.settings || { classConfigs: [], globalConfig: {} };
-      
+      const currentSettings = user?.settings || {
+        classConfigs: [],
+        globalConfig: {},
+      };
+
       currentSettings.globalConfig = {
         postingTime,
         startingQuestion: Number(startingQuestion),
-        sheetsId
+        sheetsId,
       };
 
       await axios.put("/api/auth/settings", {
-        settings: currentSettings
+        settings: currentSettings,
       });
 
       onClose();
@@ -60,8 +64,8 @@ const SettingsModal = ({ onClose }) => {
       const payload = {
         action: "updatePostingTime",
         data: {
-          postingTime: newTime
-        }
+          postingTime: newTime,
+        },
       };
 
       const response = await fetch("/api/questions", {
@@ -73,7 +77,7 @@ const SettingsModal = ({ onClose }) => {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         alert("Posting time updated successfully!");
       } else {

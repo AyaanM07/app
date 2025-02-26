@@ -4,7 +4,7 @@ import express from "express";
 import fetch from "node-fetch";
 import process from "node:process";
 import { connectDB } from "./src/db/connectdb.js";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 import authRoutes from "./src/auth/routes/auth.route.js";
 
 dotenv.config();
@@ -22,7 +22,8 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXesTY1XEb9Z40-3A7m-c42RpWgeYgypvbV4JrprLrKJjQgKHow_w4U3TNVtY6MyTPdA/exec";
+const GOOGLE_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbzXesTY1XEb9Z40-3A7m-c42RpWgeYgypvbV4JrprLrKJjQgKHow_w4U3TNVtY6MyTPdA/exec";
 
 app.post("/api/questions", async (req, res) => {
   try {

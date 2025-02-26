@@ -13,7 +13,7 @@ const DirectoryModal = ({ classData, onClose }) => {
   useEffect(() => {
     if (user?.settings?.classConfigs) {
       const config = user.settings.classConfigs.find(
-        (c) => c.grade === classData.name
+        (c) => c.grade === classData.name,
       );
       if (config) {
         setFolderId(config.folderId || "");
@@ -41,13 +41,16 @@ const DirectoryModal = ({ classData, onClose }) => {
   const handleSave = async () => {
     try {
       // Get existing settings or initialize new ones
-      const currentSettings = user?.settings || { classConfigs: [], globalConfig: {} };
-      
+      const currentSettings = user?.settings || {
+        classConfigs: [],
+        globalConfig: {},
+      };
+
       // Find and update or add new class config
       const configIndex = currentSettings.classConfigs.findIndex(
-        (c) => c.grade === classData.name
+        (c) => c.grade === classData.name,
       );
-      
+
       const newConfig = {
         grade: classData.name,
         folderId,
@@ -63,7 +66,7 @@ const DirectoryModal = ({ classData, onClose }) => {
 
       // Update settings in database
       await axios.put("/api/auth/settings", {
-        settings: currentSettings
+        settings: currentSettings,
       });
 
       onClose();

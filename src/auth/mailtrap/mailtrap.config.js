@@ -8,7 +8,7 @@ const ENDPOINT = process.env.MAILTRAP_ENDPOINT;
 
 export const mailtrapClient = new Mailtrap({
   token: TOKEN,
-  endpoint: ENDPOINT
+  endpoint: ENDPOINT,
 });
 
 export const sender = {
