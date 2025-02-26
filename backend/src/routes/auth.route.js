@@ -19,6 +19,6 @@ router.post("/logout", logout);
 router.get("/check-auth", verifyToken, checkAuth);
 
 router.get("/settings", verifyToken, getUserSettings);
-router.post("/settings", verifyToken, updateUserSettings);
+router.put("/settings", verifyToken, updateUserSettings);
 
 export default router;

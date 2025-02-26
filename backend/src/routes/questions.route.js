@@ -1,7 +1,9 @@
 import express from "express";
 import fetch from "node-fetch";
+import dotenv from "dotenv";
 
 const router = express.Router();
+dotenv.config();
 
 const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL;
 
