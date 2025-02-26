@@ -102,22 +102,22 @@ export const useAuthStore = create((set) => ({
         isCheckingAuth: false,
       });
     } catch (error) {
-      set({ error: null, isCheckingAuth: false, isAuthenticated: false });
+      set({
+        error: error.response?.data?.message || "Error checking auth",
+        isCheckingAuth: false,
+        isAuthenticated: false,
+      });
     }
   },
 
   updateSettings: async (settings) => {
-    try {
-      const response = await axios.put(`${API_URL}/settings`, { settings });
-      set((state) => ({
-        ...state,
-        user: {
-          ...state.user,
-          settings: response.data.user.settings,
-        },
-      }));
-    } catch (error) {
-      throw error;
-    }
+    const response = await axios.put(`${API_URL}/settings`, { settings });
+    set((state) => ({
+      ...state,
+      user: {
+        ...state.user,
+        settings: response.data.user.settings,
+      },
+    }));
   },
 }));
