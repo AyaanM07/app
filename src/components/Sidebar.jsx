@@ -1,7 +1,9 @@
-import { BookCheckIcon, Brain, Info, LibraryBig, Settings, Menu } from "lucide-react"
+import { BookCheckIcon, Brain, Info, LibraryBig, Settings, Menu, LogOut } from "lucide-react"
 import { useState } from "react"
 import { AnimatePresence, motion } from "framer-motion"
 import { Link } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import toast from "react-hot-toast";
 
 const SIDEBAR_ITEMS = [
   {name: "Dashboard",icon:LibraryBig, color:"#66cccc", href: "/"},
@@ -12,11 +14,17 @@ const SIDEBAR_ITEMS = [
 ]
 
 const Sidebar = () => {
-  const[isSidebarOpen, setIsSidebarOpen] = useState(true)
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    logout();
+  };
+
   return (
     <motion.div 
-    className={`relative z-10 transition-all duration-300 ease-in-out flex-shrink-0 ${isSidebarOpen ? 'w-64' : 'w-20'}`}
-    animate={{width: isSidebarOpen ? 256 : 80}}
+      className={`relative z-10 transition-all duration-300 ease-in-out flex-shrink-0 ${isSidebarOpen ? 'w-64' : 'w-20'}`}
+      animate={{width: isSidebarOpen ? 256 : 80}}
     >
       <div className='h-full bg-gray-800 bg-opacity-50 backdrop-blur-md p-4 flex flex-col border-r border-gray-700'>
         <motion.button 
@@ -25,8 +33,9 @@ const Sidebar = () => {
           onClick={() => setIsSidebarOpen(!isSidebarOpen)}
           className='p-2 rounded-full hover:bg-gray-700 transition-colors max-w-fit'
         >
-          <Menu size ={24} />
+          <Menu size ={24 } />
         </motion.button>
+
         <nav className='mt-8 flex-grow'> 
           {SIDEBAR_ITEMS.map((item) => (
             <Link key={item.href} to={item.href}>
@@ -52,6 +61,24 @@ const Sidebar = () => {
             </Link>
           ))}
         </nav>
+
+        <motion.button
+          initial={{ opacity: 0, y: 0 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6}}
+          className="mt-4"
+        >
+          <motion.button
+					whileHover={{ scale: 1.05 }}
+					whileTap={{ scale: 0.95 }}
+					onClick={handleLogout}
+					className='w-full py-3 px-4 bg-gradient-to-r from-green-500 to-emerald-600 text-white 
+				font-bold rounded-lg shadow-lg hover:from-green-600 hover:to-emerald-700
+				 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 focus:ring-offset-gray-900'
+				  >
+					Logout
+				  </motion.button>
+        </motion.button>
       </div>
     </motion.div>
   )
