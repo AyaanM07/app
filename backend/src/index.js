@@ -1,11 +1,11 @@
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
-import fetch from "node-fetch";
 import process from "node:process";
 import { connectDB } from "./db/connectdb.js";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.route.js";
+import questionsRoutes from "./routes/questions.route.js";
 
 dotenv.config();
 const app = express();
@@ -21,43 +21,18 @@ app.use((req, res, next) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/questions", questionsRoutes);
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXesTY1XEb9Z40-3A7m-c42RpWgeYgypvbV4JrprLrKJjQgKHow_w4U3TNVtY6MyTPdA/exec";
-
-app.post("/api/questions", async (req, res) => {
+const startServer = async () => {
   try {
-    const formData = new URLSearchParams();
-    formData.append("payload", JSON.stringify(req.body));
-
-    const response = await fetch(GOOGLE_SCRIPT_URL, {
-      method: "POST",
-      body: formData,
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
+    await connectDB();
+    app.listen(port, () => {
+      console.log(`Server running at http://localhost:${port}`);
     });
-
-    const data = await response.text();
-
-    try {
-      const jsonData = JSON.parse(data);
-      res.json(jsonData);
-    } catch (e) {
-      res.json({
-        success: true,
-        message: data,
-      });
-    }
   } catch (error) {
-    console.error("Error in questions API:", error);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+    console.error("Failed to start server:", error);
+    process.exit(1);
   }
-});
+};
 
-app.listen(port, () => {
-  connectDB();
-  console.log(`Server running at http://localhost:${port}`);
-});
+startServer();
