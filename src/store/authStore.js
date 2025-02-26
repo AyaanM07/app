@@ -122,4 +122,18 @@ export const useAuthStore = create((set) => ({
 			throw error;
 		}
 	},
+	updateSettings: async (settings) => {
+		try {
+			const response = await axios.put(`${API_URL}/settings`, { settings });
+			set(state => ({
+				...state,
+				user: {
+					...state.user,
+					settings: response.data.user.settings
+				}
+			}));
+		} catch (error) {
+			throw error;
+		}
+	}
 }));

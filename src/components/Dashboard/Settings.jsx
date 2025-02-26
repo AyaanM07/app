@@ -1,7 +1,24 @@
 import { motion } from "framer-motion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useAuthStore } from "../../store/authStore";
+import axios from "axios";
 
 const SettingsModal = ({ onClose }) => {
+  const [postingTime, setPostingTime] = useState("09:00");
+  const [startingQuestion, setStartingQuestion] = useState("");
+  const [sheetsId, setSheetsId] = useState("");
+  const { user } = useAuthStore();
+
+  // Load existing settings when modal opens
+  useEffect(() => {
+    if (user?.settings?.globalConfig) {
+      const { postingTime, startingQuestion, sheetsId } = user.settings.globalConfig;
+      setPostingTime(postingTime || "09:00");
+      setStartingQuestion(startingQuestion || "");
+      setSheetsId(sheetsId || "");
+    }
+  }, [user]);
+
   // Handle clicking outside the modal
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -17,40 +34,56 @@ const SettingsModal = ({ onClose }) => {
     };
   }, [onClose]);
 
-  // Handle saving data
-  const handleSave = () => {
-    // Add your logic to save data here
-    console.log("Settings saved!");
+  const handleSave = async () => {
+    try {
+      const currentSettings = user?.settings || { classConfigs: [], globalConfig: {} };
+      
+      currentSettings.globalConfig = {
+        postingTime,
+        startingQuestion: Number(startingQuestion),
+        sheetsId
+      };
 
-    // Close the modal after saving
-    onClose();
+      await axios.put("/api/auth/settings", {
+        settings: currentSettings
+      });
+
+      onClose();
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings");
+    }
   };
 
-const saveConfig = async (config) => {
-  try {
-    const response = await fetch("YOUR_GAS_WEB_APP_URL", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "updateConfig",
-        config: {
-          classIdsToPost: [/* dynamic classroom codes */],
-          sheetId: "YOUR_SHEET_ID",
-          sheetMapping: {
-            "Grade 12": { folderId: "DYNAMIC_FOLDER_ID" },
-            // Add other grades
-          },
-          folderIdGr12: "DYNAMIC_FOLDER_ID_GR12"
+  const handleTimeChange = async (newTime) => {
+    try {
+      const payload = {
+        action: "updatePostingTime",
+        data: {
+          postingTime: newTime
         }
-      }),
-    });
-    const result = await response.json();
-    if (!result.success) throw new Error(result.error);
-    console.log("Config saved!");
-  } catch (error) {
-    console.error("Error saving config:", error);
-  }
-};
+      };
+
+      const response = await fetch("/api/questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        alert("Posting time updated successfully!");
+      } else {
+        throw new Error(result.error || "Failed to update posting time");
+      }
+    } catch (error) {
+      console.error("Error updating posting time:", error);
+      alert(`Error: ${error.message}`);
+    }
+  };
 
   return (
     <motion.div
@@ -77,7 +110,11 @@ const saveConfig = async (config) => {
             <input
               type="time"
               className="mt-1 block w-full bg-gray-700 text-white rounded-lg p-2"
-              defaultValue="09:00"
+              value={postingTime}
+              onChange={(e) => {
+                setPostingTime(e.target.value);
+                handleTimeChange(e.target.value);
+              }}
             />
           </div>
 
@@ -90,6 +127,8 @@ const saveConfig = async (config) => {
               type="number"
               className="mt-1 block w-full bg-gray-700 text-white rounded-lg p-2"
               placeholder="Enter starting question number"
+              value={startingQuestion}
+              onChange={(e) => setStartingQuestion(e.target.value)}
             />
           </div>
 
@@ -102,6 +141,8 @@ const saveConfig = async (config) => {
               type="text"
               className="mt-1 block w-full bg-gray-700 text-white rounded-lg p-2"
               placeholder="Enter Folder ID"
+              value={sheetsId}
+              onChange={(e) => setSheetsId(e.target.value)}
             />
           </div>
         </div>
@@ -115,7 +156,7 @@ const saveConfig = async (config) => {
           </button>
           <button
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400"
-            onClick={saveConfig}
+            onClick={handleSave}
           >
             Save
           </button>

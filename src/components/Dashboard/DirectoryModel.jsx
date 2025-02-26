@@ -1,12 +1,29 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useAuthStore } from "../../store/authStore";
+import axios from "axios";
 
 const DirectoryModal = ({ classData, onClose }) => {
   const [folderId, setFolderId] = useState("");
   const [group6Code, setGroup6Code] = useState("");
   const [group4Code, setGroup4Code] = useState("");
+  const { user } = useAuthStore();
 
-  // Handle clicking outside the modal
+  // Load existing settings when modal opens
+  useEffect(() => {
+    if (user?.settings?.classConfigs) {
+      const config = user.settings.classConfigs.find(
+        (c) => c.grade === classData.name
+      );
+      if (config) {
+        setFolderId(config.folderId || "");
+        setGroup6Code(config.group6Code || "");
+        setGroup4Code(config.group4Code || "");
+      }
+    }
+  }, [classData, user]);
+
+  // Handle clicking outside modal
   useEffect(() => {
     const handleClickOutside = (event) => {
       const modalContent = document.querySelector(".modal-content");
@@ -21,7 +38,41 @@ const DirectoryModal = ({ classData, onClose }) => {
     };
   }, [onClose]);
 
-  // Save configuration
+  const handleSave = async () => {
+    try {
+      // Get existing settings or initialize new ones
+      const currentSettings = user?.settings || { classConfigs: [], globalConfig: {} };
+      
+      // Find and update or add new class config
+      const configIndex = currentSettings.classConfigs.findIndex(
+        (c) => c.grade === classData.name
+      );
+      
+      const newConfig = {
+        grade: classData.name,
+        folderId,
+        group6Code,
+        group4Code,
+      };
+
+      if (configIndex >= 0) {
+        currentSettings.classConfigs[configIndex] = newConfig;
+      } else {
+        currentSettings.classConfigs.push(newConfig);
+      }
+
+      // Update settings in database
+      await axios.put("/api/auth/settings", {
+        settings: currentSettings
+      });
+
+      onClose();
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      alert("Failed to save settings");
+    }
+  };
+
   const handlePostQuestions = async () => {
     console.log("Sending request with:", { folderId, group6Code, group4Code });
     try {
@@ -127,9 +178,15 @@ const DirectoryModal = ({ classData, onClose }) => {
           </button>
           <button
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400"
-            onClick={handlePostQuestions} // Call saveConfig here
+            onClick={handleSave}
           >
             Save
+          </button>
+          <button
+            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-400"
+            onClick={handlePostQuestions}
+          >
+            Post Questions
           </button>
         </div>
       </motion.div>

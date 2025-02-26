@@ -22,7 +22,7 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxRxzGKhI5HPtC-cDWsaPwj7xWS4adNyFM_oXfE6-tkYuxssz-m4P0oYbkA3dyjU1ZS6w/exec";
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzXesTY1XEb9Z40-3A7m-c42RpWgeYgypvbV4JrprLrKJjQgKHow_w4U3TNVtY6MyTPdA/exec";
 
 app.post("/api/questions", async (req, res) => {
   try {
