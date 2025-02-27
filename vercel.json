@@ -16,20 +16,11 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "backend/src/index.js"
-    },
-    {
-      "handle": "filesystem"
+      "dest": "/backend/src/index.js"
     },
     {
       "src": "/(.*)",
-      "dest": "frontend/dist/$1"
-    }
-  ],
-  "crons": [
-    {
-      "path": "/api/cron",
-      "schedule": "0 9 * * *"
+      "dest": "/frontend/dist/index.html"
     }
   ]
 }
