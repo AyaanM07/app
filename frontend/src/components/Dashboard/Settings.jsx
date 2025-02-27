@@ -9,12 +9,30 @@ const SettingsModal = ({ onClose }) => {
   const [sheetsId, setSheetsId] = useState("");
   const { user } = useAuthStore();
 
+  // Convert local time to UTC
+  const convertToUTC = (localTime) => {
+    const [hours, minutes] = localTime.split(":");
+    const date = new Date();
+    date.setHours(parseInt(hours));
+    date.setMinutes(parseInt(minutes));
+    return `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
+  };
+
+  // Convert UTC to local time
+  const convertToLocal = (utcTime) => {
+    const [hours, minutes] = utcTime.split(":");
+    const date = new Date();
+    date.setUTCHours(parseInt(hours));
+    date.setUTCMinutes(parseInt(minutes));
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+  };
+
   // Load existing settings when modal opens
   useEffect(() => {
     if (user?.settings?.globalConfig) {
       const { postingTime, startingQuestion, sheetsId } =
         user.settings.globalConfig;
-      setPostingTime(postingTime || "09:00");
+      setPostingTime(postingTime ? convertToLocal(postingTime) : "09:00");
       setStartingQuestion(startingQuestion || "");
       setSheetsId(sheetsId || "");
     }
@@ -43,7 +61,7 @@ const SettingsModal = ({ onClose }) => {
       };
 
       currentSettings.globalConfig = {
-        postingTime,
+        postingTime: convertToUTC(postingTime),
         startingQuestion: Number(startingQuestion),
         sheetsId,
       };
@@ -56,36 +74,6 @@ const SettingsModal = ({ onClose }) => {
     } catch (error) {
       console.error("Error saving settings:", error);
       alert("Failed to save settings");
-    }
-  };
-
-  const handleTimeChange = async (newTime) => {
-    try {
-      const payload = {
-        action: "updatePostingTime",
-        data: {
-          postingTime: newTime,
-        },
-      };
-
-      const response = await fetch("/api/questions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        alert("Posting time updated successfully!");
-      } else {
-        throw new Error(result.error || "Failed to update posting time");
-      }
-    } catch (error) {
-      console.error("Error updating posting time:", error);
-      alert(`Error: ${error.message}`);
     }
   };
 
@@ -106,23 +94,18 @@ const SettingsModal = ({ onClose }) => {
         </h2>
 
         <div className="space-y-4">
-          {/* Change Time */}
           <div>
             <label className="block text-sm font-medium text-gray-300">
-              Change Time
+              Change Time (Your Local Time)
             </label>
             <input
               type="time"
               className="mt-1 block w-full bg-gray-700 text-white rounded-lg p-2"
               value={postingTime}
-              onChange={(e) => {
-                setPostingTime(e.target.value);
-                handleTimeChange(e.target.value);
-              }}
+              onChange={(e) => setPostingTime(e.target.value)}
             />
           </div>
 
-          {/* Change Starting Question */}
           <div>
             <label className="block text-sm font-medium text-gray-300">
               Change Starting Question
@@ -136,7 +119,6 @@ const SettingsModal = ({ onClose }) => {
             />
           </div>
 
-          {/* Folder Directory (Google Sheets ID) */}
           <div>
             <label className="block text-sm font-medium text-gray-300">
               Folder ID

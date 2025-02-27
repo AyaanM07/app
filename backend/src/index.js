@@ -6,6 +6,7 @@ import { connectDB } from "./db/connectdb.js";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.route.js";
 import questionsRoutes from "./routes/questions.route.js";
+import { initializeScheduler } from "./services/scheduler.js";
 
 dotenv.config();
 const app = express();
@@ -26,6 +27,8 @@ app.use("/api/questions", questionsRoutes);
 const startServer = async () => {
   try {
     await connectDB();
+    initializeScheduler();
+
     app.listen(port, () => {
       console.log(`Server running at http://localhost:${port}`);
     });
