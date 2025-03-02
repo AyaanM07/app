@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
+import toast from "react-hot-toast";
 
 const DirectoryModal = ({ classData, onClose }) => {
   const [folderId, setFolderId] = useState("");
@@ -88,11 +89,11 @@ const DirectoryModal = ({ classData, onClose }) => {
 
       // Update settings in database
       await updateSettings(currentSettings);
-
+      toast.success(`Settings for ${classData.name} saved successfully`);
       onClose();
     } catch (error) {
       console.error("Error saving settings:", error);
-      alert("Failed to save settings");
+      toast.error("Failed to save settings");
     }
   };
 
@@ -110,6 +111,9 @@ const DirectoryModal = ({ classData, onClose }) => {
       };
 
       console.log("Sending payload:", JSON.stringify(payload));
+      
+      // Show a loading toast that we can update later
+      const toastId = toast.loading("Posting questions...");
 
       const response = await fetch("/api/questions", {
         method: "POST",
@@ -127,14 +131,14 @@ const DirectoryModal = ({ classData, onClose }) => {
       console.log("Response from server:", result);
 
       if (result.success) {
-        alert(result.message || "Request sent successfully!");
+        toast.success(result.message || "Questions posted successfully!", { id: toastId });
         onClose();
       } else {
         throw new Error(result.error || "Failed to process request");
       }
     } catch (error) {
       console.error("Error sending request:", error);
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     }
   };
 
@@ -142,7 +146,7 @@ const DirectoryModal = ({ classData, onClose }) => {
     try {
       // First check if we have the required data
       if (!user?.settings?.globalConfig?.sheetsId) {
-        alert("Please set up a Sheets ID in the global settings first");
+        toast.error("Please set up a Sheets ID in the global settings first");
         return;
       }
       
@@ -162,7 +166,7 @@ const DirectoryModal = ({ classData, onClose }) => {
       // Make sure we have at least one valid folder ID
       const hasValidFolder = Object.values(folderIds).some(id => id !== "");
       if (!hasValidFolder) {
-        alert("Please configure at least one folder ID in class settings");
+        toast.error("Please configure at least one folder ID in class settings");
         return;
       }
       
@@ -175,6 +179,9 @@ const DirectoryModal = ({ classData, onClose }) => {
       };
 
       console.log("Sending email payload:", JSON.stringify(payload));
+      
+      // Show a loading toast that we can update later
+      const toastId = toast.loading("Sending emails...");
 
       const response = await fetch("/api/questions", {
         method: "POST",
@@ -193,14 +200,14 @@ const DirectoryModal = ({ classData, onClose }) => {
       console.log("Response from server:", result);
 
       if (result.success) {
-        alert(result.message || "Emails sent successfully!");
+        toast.success(result.message || "Emails sent successfully!", { id: toastId });
         onClose();
       } else {
         throw new Error(result.error || "Failed to send emails");
       }
     } catch (error) {
       console.error("Error sending email request:", error);
-      alert(`Error: ${error.message}`);
+      toast.error(`Error: ${error.message}`);
     }
   };
 
