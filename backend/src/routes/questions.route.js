@@ -9,6 +9,26 @@ const GOOGLE_SCRIPT_URL = process.env.GOOGLE_SCRIPT_URL;
 
 router.post("/", async (req, res) => {
   try {
+    const { action, data } = req.body;
+    
+    // Validate request based on action type
+    if (action === "postQuestions") {
+      if (!data.folderId || (!data.classroomIds || data.classroomIds.length === 0)) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required fields: folderId or classroomIds"
+        });
+      }
+    } else if (action === "postEmails") {
+      if (!data.folderIds || !data.sheetId) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required fields for email posting: folderIds or sheetId"
+        });
+      }
+    }
+    
+    // Proceed with sending the request to Google Scripts
     const formData = new URLSearchParams();
     formData.append("payload", JSON.stringify(req.body));
 
@@ -20,15 +40,29 @@ router.post("/", async (req, res) => {
       },
     });
 
-    const data = await response.text();
+    const responseText = await response.text();
+    console.log("Raw response from Google Script:", responseText);
 
     try {
-      const jsonData = JSON.parse(data);
-      res.json(jsonData);
+      // Try to parse as JSON first
+      const jsonData = JSON.parse(responseText);
+      return res.json(jsonData);
     } catch (e) {
-      res.json({
-        success: true,
-        message: data,
+      console.error("Error parsing Google Script response as JSON:", e);
+      
+      // Check for specific error cases
+      if (responseText.includes("data is not defined")) {
+        return res.status(400).json({
+          success: false,
+          error: "Server error: data is not defined in Google Script",
+        });
+      }
+      
+      // For any other case, return a properly structured error response
+      return res.status(200).json({
+        success: false,
+        error: "Invalid response from Google Script",
+        message: responseText
       });
     }
   } catch (error) {

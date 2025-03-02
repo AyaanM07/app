@@ -77,7 +77,6 @@ const DirectoryModal = ({ classData, onClose }) => {
   };
 
   const handlePostQuestions = async () => {
-    console.log("Sending request with:", { folderId, group6Code, group4Code });
     try {
       // Create the payload
       const payload = {
@@ -113,6 +112,72 @@ const DirectoryModal = ({ classData, onClose }) => {
       }
     } catch (error) {
       console.error("Error sending request:", error);
+      alert(`Error: ${error.message}`);
+    }
+  };
+
+  const handlePostEmails = async () => {
+    try {
+      // First check if we have the required data
+      if (!user?.settings?.globalConfig?.sheetsId) {
+        alert("Please set up a Sheets ID in the global settings first");
+        return;
+      }
+      
+      // Get all class configs with folder IDs
+      const folderIds = {};
+      
+      if (user?.settings?.classConfigs && user.settings.classConfigs.length > 0) {
+        user.settings.classConfigs.forEach(config => {
+          if (config.folderId) {
+            folderIds[config.grade] = config.folderId;
+          } else {
+            folderIds[config.grade] = ""; // Include class with empty folder ID
+          }
+        });
+      }
+      
+      // Make sure we have at least one valid folder ID
+      const hasValidFolder = Object.values(folderIds).some(id => id !== "");
+      if (!hasValidFolder) {
+        alert("Please configure at least one folder ID in class settings");
+        return;
+      }
+      
+      const payload = {
+        action: "postEmails",
+        data: {
+          folderIds: folderIds,
+          sheetId: user.settings.globalConfig.sheetsId
+        },
+      };
+
+      console.log("Sending email payload:", JSON.stringify(payload));
+
+      const response = await fetch("/api/questions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log("Response from server:", result);
+
+      if (result.success) {
+        alert(result.message || "Emails sent successfully!");
+        onClose();
+      } else {
+        throw new Error(result.error || "Failed to send emails");
+      }
+    } catch (error) {
+      console.error("Error sending email request:", error);
       alert(`Error: ${error.message}`);
     }
   };
@@ -190,6 +255,12 @@ const DirectoryModal = ({ classData, onClose }) => {
             onClick={handlePostQuestions}
           >
             Post Questions
+          </button>
+          <button
+            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-400"
+            onClick={handlePostEmails}
+          >
+            Post Emails
           </button>
         </div>
       </motion.div>
