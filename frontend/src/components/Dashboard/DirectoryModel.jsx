@@ -1,13 +1,12 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
-import axios from "axios";
 
 const DirectoryModal = ({ classData, onClose }) => {
   const [folderId, setFolderId] = useState("");
   const [group6Code, setGroup6Code] = useState("");
   const [group4Code, setGroup4Code] = useState("");
-  const { user } = useAuthStore();
+  const { user, updateSettings } = useAuthStore();
 
   // Load existing settings when modal opens
   useEffect(() => {
@@ -65,9 +64,7 @@ const DirectoryModal = ({ classData, onClose }) => {
       }
 
       // Update settings in database
-      await axios.put("/api/auth/settings", {
-        settings: currentSettings,
-      });
+      await updateSettings(currentSettings);
 
       onClose();
     } catch (error) {
@@ -184,7 +181,7 @@ const DirectoryModal = ({ classData, onClose }) => {
 
   return (
     <motion.div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -194,9 +191,11 @@ const DirectoryModal = ({ classData, onClose }) => {
         initial={{ y: -50 }}
         animate={{ y: 0 }}
       >
-        <h2 className="text-xl font-semibold text-gray-100 mb-4">
-          Configure Directory for {classData.name}
-        </h2>
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold text-gray-100">
+            Configure Directory for {classData.name}
+          </h2>
+        </div>
 
         <div className="space-y-4">
           <div>

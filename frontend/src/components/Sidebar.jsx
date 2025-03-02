@@ -79,23 +79,29 @@ const Sidebar = () => {
           ))}
         </nav>
 
-        <motion.button
-          initial={{ opacity: 0, y: 0 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-4"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={handleLogout}
-            className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-sky-600 text-white 
-				font-bold rounded-lg shadow-lg hover:from-cyan-600 hover:to-sky-700
-				 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-gray-500"
-          >
-            Logout
-          </motion.button>
-        </motion.button>
+        {/* Only render logout button when sidebar is open */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="mt-4"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleLogout}
+                className="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-sky-600 text-white 
+                font-bold rounded-lg shadow-lg hover:from-cyan-600 hover:to-sky-700
+                focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-gray-500"
+              >
+                Logout
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );

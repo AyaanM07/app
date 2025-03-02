@@ -111,13 +111,25 @@ export const useAuthStore = create((set) => ({
   },
 
   updateSettings: async (settings) => {
-    const response = await axios.put(`${API_URL}/settings`, { settings });
-    set((state) => ({
-      ...state,
-      user: {
-        ...state.user,
-        settings: response.data.user.settings,
-      },
-    }));
+    try {
+      set({ isLoading: true });
+      const response = await axios.put(`${API_URL}/settings`, { settings });
+      
+      if (response.data.success) {
+        set((state) => ({
+          ...state,
+          user: {
+            ...state.user,
+            settings: response.data.user.settings,
+          },
+          isLoading: false,
+        }));
+        return true;
+      }
+    } catch (error) {
+      console.error("Error updating settings:", error);
+      set({ error: "Failed to update settings", isLoading: false });
+      throw error;
+    }
   },
 }));

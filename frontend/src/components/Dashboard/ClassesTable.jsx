@@ -1,40 +1,154 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search } from "lucide-react";
+import { Search, Plus, Trash2, Edit2 } from "lucide-react"; 
 import DirectoryModal from "./DirectoryModel";
 import SettingsModal from "./Settings";
+import AddClassModal from "./AddClassModal";
+import { useAuthStore } from "../../store/authStore";
+import toast from "react-hot-toast";
 
-const userData = [
-  { id: 1, name: "Grade 12", email: "Question 34 - Organic Chemistry" },
-  { id: 2, name: "Grade 11", email: "Question 34 - Organic Chemistry" },
-  { id: 3, name: "Grade 10", email: "Question 34 - Organic Chemistry" },
-];
-
-const UsersTable = () => {
+const ClassesTable = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState(userData);
+  const [classes, setClasses] = useState([]);
+  const [filteredClasses, setFilteredClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isAddClassModalOpen, setIsAddClassModalOpen] = useState(false);
+  const { user, updateSettings } = useAuthStore();
+
+  // Load classes from user settings
+  useEffect(() => {
+    if (user?.settings?.classConfigs) {
+      // Sort classes by grade in descending order
+      const sortedClasses = [...user.settings.classConfigs]
+        .sort((a, b) => {
+          const gradeA = parseInt(a.grade.replace("Grade ", ""));
+          const gradeB = parseInt(b.grade.replace("Grade ", ""));
+          return gradeB - gradeA;
+        })
+        .map((config, index) => ({
+          id: index + 1,
+          name: config.grade,
+          email: "Question 34 - Organic Chemistry" // Default question info
+        }));
+      
+      setClasses(sortedClasses);
+      setFilteredClasses(sortedClasses);
+    } else {
+      // Set default classes if none exist
+      const defaultClasses = [
+        { id: 1, name: "Grade 12", email: "Question 34 - Organic Chemistry" },
+        { id: 2, name: "Grade 11", email: "Question 34 - Organic Chemistry" },
+        { id: 3, name: "Grade 10", email: "Question 34 - Organic Chemistry" },
+      ];
+      setClasses(defaultClasses);
+      setFilteredClasses(defaultClasses);
+    }
+  }, [user]);
 
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-    const filtered = userData.filter(
-      (user) =>
-        user.name.toLowerCase().includes(term) ||
-        user.email.toLowerCase().includes(term),
+    const filtered = classes.filter(
+      (classItem) =>
+        classItem.name.toLowerCase().includes(term) ||
+        classItem.email.toLowerCase().includes(term),
     );
-    setFilteredUsers(filtered);
+    setFilteredClasses(filtered);
   };
 
-  const handleClassClick = (user) => {
-    setSelectedClass(user);
+  const handleClassClick = (classItem) => {
+    setSelectedClass(classItem);
     setIsModalOpen(true);
   };
 
   const handleTitleClick = () => {
     setIsSettingsModalOpen(true);
+  };
+
+  const handleAddClass = () => {
+    setIsAddClassModalOpen(true);
+  };
+
+  const handleDeleteClass = async (classItem, event) => {
+    // Prevent the click from bubbling up to the row's click handler
+    event.stopPropagation();
+    
+    // Show delete confirmation toast
+    toast.custom(
+      (t) => (
+        <div
+          className={`${
+            t.visible ? 'animate-enter' : 'animate-leave'
+          } max-w-md w-full bg-gray-700 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+        >
+          <div className="flex-1 w-0 p-4">
+            <div className="flex items-start">
+              <div className="ml-3 flex-1">
+                <p className="text-sm font-medium text-gray-100">
+                  Delete {classItem.name}?
+                </p>
+                <p className="mt-1 text-sm text-gray-400">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="flex border-l border-gray-700">
+            <button
+              onClick={() => {
+                toast.dismiss(t.id);
+                executeDelete(classItem);
+              }}
+              className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-red-400 hover:text-red-300 focus:outline-none"
+            >
+              Delete
+            </button>
+          </div>
+          <div className="flex border-l border-gray-700">
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="w-full border border-transparent rounded-none rounded-r-lg p-4 flex items-center justify-center text-sm font-medium text-gray-400 hover:text-gray-300 focus:outline-none"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      { position: "top-center", duration: 5000 }
+    );
+  };
+  
+  const executeDelete = async (classItem) => {
+    try {
+      // Get current settings
+      const currentSettings = user?.settings || {
+        classConfigs: [],
+        globalConfig: {},
+      };
+
+      // Filter out the class to delete
+      currentSettings.classConfigs = currentSettings.classConfigs.filter(
+        (c) => c.grade !== classItem.name
+      );
+
+      // Update settings in database
+      await updateSettings(currentSettings);
+      
+      // Update local state to reflect the deletion
+      const updatedClasses = classes.filter(c => c.name !== classItem.name);
+      setClasses(updatedClasses);
+      setFilteredClasses(
+        filteredClasses.filter(c => c.name !== classItem.name)
+      );
+      
+      // Show success toast
+      toast.success(`${classItem.name} has been deleted successfully`);
+    } catch (error) {
+      console.error("Error deleting class:", error);
+      toast.error(`Failed to delete ${classItem.name}. Please try again.`);
+    }
   };
 
   return (
@@ -47,23 +161,31 @@ const UsersTable = () => {
       >
         <div className="flex justify-between items-center mb-6">
           <h2
-            className="text-xl font-semibold text-gray-100"
+            className="text-xl font-semibold text-gray-100 cursor-pointer"
             onClick={handleTitleClick}
           >
             One Question a Day
           </h2>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="Search users..."
-              className="bg-gray-700 text-white placeholder-gray-400 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={searchTerm}
-              onChange={handleSearch}
-            />
-            <Search
-              className="absolute left-3 top-2.5 text-gray-400"
-              size={18}
-            />
+          <div className="flex items-center space-x-4">
+            <div className="relative">
+              <input
+                type="text"
+                placeholder="Search classes..."
+                className="bg-gray-700 text-white placeholder-gray-400 rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                value={searchTerm}
+                onChange={handleSearch}
+              />
+              <Search
+                className="absolute left-3 top-2.5 text-gray-400"
+                size={18}
+              />
+            </div>
+            <button
+              onClick={handleAddClass}
+              className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2 flex items-center"
+            >
+              <Plus size={18} className="mr-2" /> Add Class
+            </button>
           </div>
         </div>
 
@@ -84,42 +206,52 @@ const UsersTable = () => {
             </thead>
 
             <tbody className="divide-y divide-gray-700">
-              {filteredUsers.map((user) => (
+              {filteredClasses.map((classItem) => (
                 <motion.tr
-                  key={user.id}
+                  key={classItem.id}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.3 }}
                 >
                   <td
                     className="px-6 py-4 whitespace-nowrap cursor-pointer hover:text-blue-400"
-                    onClick={() => handleClassClick(user)}
+                    onClick={() => handleClassClick(classItem)}
                   >
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10">
                         <div className="h-10 w-10 rounded-full bg-gradient-to-r from-purple-400 to-blue-500 flex items-center justify-center text-white font-semibold">
-                          {user.name.charAt(0)}
+                          {classItem.name.substring(6)}
                         </div>
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-100">
-                          {user.name}
+                          {classItem.name}
                         </div>
                       </div>
                     </div>
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">{user.email}</div>
+                    <div className="text-sm text-gray-300">{classItem.email}</div>
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
-                    <button className="text-indigo-400 hover:text-indigo-300 mr-2">
-                      Edit
-                    </button>
-                    <button className="text-red-400 hover:text-red-300">
-                      Delete
-                    </button>
+                    <div className="flex items-center space-x-3">
+                      <button 
+                        className="text-indigo-400 hover:text-indigo-300 p-1 rounded-full hover:bg-gray-700"
+                        onClick={() => handleClassClick(classItem)}
+                        title="Edit"
+                      >
+                        <Edit2 size={18} />
+                      </button>
+                      <button 
+                        className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-gray-700"
+                        onClick={(e) => handleDeleteClass(classItem, e)}
+                        title="Delete"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
                   </td>
                 </motion.tr>
               ))}
@@ -138,8 +270,14 @@ const UsersTable = () => {
       {isSettingsModalOpen && (
         <SettingsModal onClose={() => setIsSettingsModalOpen(false)} />
       )}
+
+      {isAddClassModalOpen && (
+        <AddClassModal 
+          onClose={() => setIsAddClassModalOpen(false)}
+        />
+      )}
     </>
   );
 };
 
-export default UsersTable;
+export default ClassesTable;
