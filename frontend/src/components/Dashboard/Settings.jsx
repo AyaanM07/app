@@ -5,7 +5,6 @@ import axios from "axios";
 
 const SettingsModal = ({ onClose }) => {
   const [postingTime, setPostingTime] = useState("09:00");
-  const [startingQuestion, setStartingQuestion] = useState("");
   const [sheetsId, setSheetsId] = useState("");
   const { user } = useAuthStore();
 
@@ -30,10 +29,8 @@ const SettingsModal = ({ onClose }) => {
   // Load existing settings when modal opens
   useEffect(() => {
     if (user?.settings?.globalConfig) {
-      const { postingTime, startingQuestion, sheetsId } =
-        user.settings.globalConfig;
+      const { postingTime, sheetsId } = user.settings.globalConfig;
       setPostingTime(postingTime ? convertToLocal(postingTime) : "09:00");
-      setStartingQuestion(startingQuestion || "");
       setSheetsId(sheetsId || "");
     }
   }, [user]);
@@ -62,7 +59,6 @@ const SettingsModal = ({ onClose }) => {
 
       currentSettings.globalConfig = {
         postingTime: convertToUTC(postingTime),
-        startingQuestion: Number(startingQuestion),
         sheetsId,
       };
 
@@ -103,19 +99,6 @@ const SettingsModal = ({ onClose }) => {
               className="mt-1 block w-full bg-gray-700 text-white rounded-lg p-2"
               value={postingTime}
               onChange={(e) => setPostingTime(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Change Starting Question
-            </label>
-            <input
-              type="number"
-              className="mt-1 block w-full bg-gray-700 text-white rounded-lg p-2"
-              placeholder="Enter starting question number"
-              value={startingQuestion}
-              onChange={(e) => setStartingQuestion(e.target.value)}
             />
           </div>
 

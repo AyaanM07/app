@@ -26,6 +26,16 @@ router.post("/", async (req, res) => {
           error: "Missing required fields for email posting: folderIds or sheetId"
         });
       }
+    } else if (action === "setStartingNumber") {
+      // Validate setStartingNumber action
+      if (!data.grade || !data.number) {
+        return res.status(400).json({
+          success: false,
+          error: "Missing required fields for setting starting number: grade or number"
+        });
+      }
+      
+      // No need for folderId in this action based on your Postman example
     }
     
     // Proceed with sending the request to Google Scripts

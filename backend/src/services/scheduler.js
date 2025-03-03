@@ -20,37 +20,77 @@ const checkPostingTime = (userPostingTime) => {
 // Function to post question for a user
 const postQuestionForUser = async (user) => {
   try {
-    const startingQuestion = user.settings?.globalConfig?.startingQuestion || 1;
-
-    const response = await fetch(`${API_BASE_URL}/api/questions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        action: "postQuestions",
-        data: {
-          folderId: user.settings?.classConfigs?.[0]?.folderId,
-          classroomIds:
-            user.settings?.classConfigs?.flatMap((config) =>
-              [config.group6Code, config.group4Code].filter(Boolean),
-            ) || [],
-        },
-      }),
-    });
-
-    const result = await response.json();
-
-    if (!result.success) {
-      throw new Error(result.error || "Failed to post question");
+    // Get class configs with active classroom codes
+    const activeConfigs = user.settings?.classConfigs?.filter(
+      config => (config.group6Code || config.group4Code) && config.folderId
+    ) || [];
+    
+    if (activeConfigs.length === 0) {
+      console.log(`User ${user.email} has no active class configurations. Skipping.`);
+      return { success: false, error: "No active class configurations" };
     }
 
-    // Only update if posting was successful
-    await User.findByIdAndUpdate(user._id, {
-      "settings.globalConfig.startingQuestion": startingQuestion + 1,
-    });
+    // Process each class configuration
+    const results = [];
+    for (const classConfig of activeConfigs) {
+      // Get the starting question number from the class config
+      const startingQuestion = classConfig.startingQuestion || 1;
+      
+      const classroomIds = [classConfig.group6Code, classConfig.group4Code].filter(Boolean);
+      if (classroomIds.length === 0) continue;
+      
+      const response = await fetch(`${API_BASE_URL}/api/questions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "postQuestions",
+          data: {
+            folderId: classConfig.folderId,
+            classroomIds: classroomIds,
+            startingQuestion: startingQuestion
+          },
+        }),
+      });
 
-    return result;
+      const result = await response.json();
+
+      if (result.success) {
+        // If the GAS script handles incrementation, we'll trust it did so correctly
+        // We should still update our local state to match
+        if (result.nextQuestionNumber) {
+          // Update the database with the next question number returned by the GAS script
+          await User.updateOne(
+            { 
+              _id: user._id, 
+              "settings.classConfigs.grade": classConfig.grade 
+            },
+            {
+              $set: {
+                "settings.classConfigs.$.startingQuestion": result.nextQuestionNumber
+              }
+            }
+          );
+        }
+        
+        results.push({
+          grade: classConfig.grade,
+          success: true
+        });
+      } else {
+        results.push({
+          grade: classConfig.grade,
+          success: false,
+          error: result.error || "Failed to post question"
+        });
+      }
+    }
+
+    return {
+      success: results.some(r => r.success),
+      results: results
+    };
   } catch (error) {
     console.error(`Error posting question for user ${user.email}:`, error);
     return {

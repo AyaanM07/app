@@ -8,6 +8,7 @@ const DirectoryModal = ({ classData, onClose }) => {
   const [group6Code, setGroup6Code] = useState("");
   const [group4Code, setGroup4Code] = useState("");
   const [singleClassCode, setSingleClassCode] = useState("");
+  const [startingQuestion, setStartingQuestion] = useState(1); 
   const { user, updateSettings } = useAuthStore();
 
   // Check if this is grade 11 or above
@@ -22,6 +23,7 @@ const DirectoryModal = ({ classData, onClose }) => {
       );
       if (config) {
         setFolderId(config.folderId || "");
+        setStartingQuestion(config.startingQuestion || 1);
         
         if (isHigherGrade) {
           setGroup6Code(config.group6Code || "");
@@ -51,6 +53,38 @@ const DirectoryModal = ({ classData, onClose }) => {
 
   const handleSave = async () => {
     try {
+      // First, check if the question number has changed and we need to update it in GAS
+      const currentConfig = user?.settings?.classConfigs?.find(
+        c => c.grade === classData.name
+      );
+      
+      const currentStartingQuestion = currentConfig?.startingQuestion || 1;
+      const newStartingQuestion = parseInt(startingQuestion) || 1;
+      
+      // If starting question number has changed, send request to update it in GAS
+      if (currentStartingQuestion !== newStartingQuestion) {
+        // Send request to update the starting question number
+        const response = await fetch("/api/questions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            action: "setStartingNumber",
+            data: {
+              grade: classData.name,
+              number: newStartingQuestion
+            },
+          }),
+        });
+        
+        const result = await response.json();
+        if (!result.success) {
+          console.warn("Failed to update starting question number in GAS:", result.error);
+          // Continue with saving settings even if GAS update failed
+        }
+      }
+      
       // Get existing settings or initialize new ones
       const currentSettings = user?.settings || {
         classConfigs: [],
@@ -70,6 +104,7 @@ const DirectoryModal = ({ classData, onClose }) => {
           folderId,
           group6Code,
           group4Code,
+          startingQuestion: newStartingQuestion, // Use the new starting question
         };
       } else {
         // For lower grades, store the single code in group6Code field
@@ -77,7 +112,8 @@ const DirectoryModal = ({ classData, onClose }) => {
           grade: classData.name,
           folderId,
           group6Code: singleClassCode,
-          group4Code: "" // Empty for lower grades
+          group4Code: "", // Empty for lower grades
+          startingQuestion: newStartingQuestion, // Use the new starting question
         };
       }
 
@@ -230,6 +266,24 @@ const DirectoryModal = ({ classData, onClose }) => {
         </div>
 
         <div className="space-y-4">
+          {/* Starting question number at the top */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Starting Question Number
+            </label>
+            <input
+              type="number"
+              min="1"
+              className="mt-1 block w-full bg-gray-700 text-white rounded-lg p-2"
+              placeholder="Enter starting question number"
+              value={startingQuestion}
+              onChange={(e) => setStartingQuestion(e.target.value)}
+            />
+            <p className="text-xs text-gray-400 mt-1">
+              This number will be used for the next question post
+            </p>
+          </div>
+          
           {isHigherGrade ? (
             // For Grade 11 and above - show both inputs
             <>

@@ -26,12 +26,12 @@ const userSchema = new mongoose.Schema(
           group6Code: String,
           group4Code: String,
           folderId: String,
+          startingQuestion: Number,
         },
       ],
       globalConfig: {
         sheetsId: String,
         postingTime: String,
-        startingQuestion: Number,
       },
     },
   },
