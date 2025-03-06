@@ -33,6 +33,11 @@ const userSchema = new mongoose.Schema(
         sheetsId: String,
         postingTime: String,
       },
+      p1ToFormsConfig: {
+        sourceFolderId: String,
+        markschemeFolderId: String,
+        targetFolderId: String,
+      },
     },
   },
   { timestamps: true },
