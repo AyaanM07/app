@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { AlertCircle, FileText, Check, Loader } from "lucide-react";
+import { AlertCircle, FileText, Check, Loader, Trash2 } from "lucide-react";
 import Header from "../components/common/Header";
 import toast from "react-hot-toast";
 import { useAuthStore } from "../store/authStore";
@@ -27,6 +27,22 @@ const P1toGoogleForms = () => {
       });
     }
   }, [user]);
+
+  // Load processing results from local storage on component mount
+  useEffect(() => {
+    const savedResults = localStorage.getItem('p1FormConversionResults');
+    if (savedResults) {
+      try {
+        const parsedResults = JSON.parse(savedResults);
+        setProcessingResults(parsedResults);
+        setShowResults(true);
+      } catch (error) {
+        console.error("Error parsing saved results:", error);
+        // Clear corrupted data
+        localStorage.removeItem('p1FormConversionResults');
+      }
+    }
+  }, []);
 
   const saveSettings = async () => {
     try {
@@ -92,6 +108,9 @@ const P1toGoogleForms = () => {
         setProcessingResults(result);
         setShowResults(true);
         
+        // Save results to localStorage
+        localStorage.setItem('p1FormConversionResults', JSON.stringify(result));
+        
         // Save settings after successful conversion
         await saveSettings();
       } else {
@@ -103,6 +122,13 @@ const P1toGoogleForms = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleClearResults = () => {
+    setProcessingResults(null);
+    setShowResults(false);
+    localStorage.removeItem('p1FormConversionResults');
+    toast.success("Results cleared");
   };
 
   return (
@@ -232,10 +258,20 @@ const P1toGoogleForms = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <h2 className="text-xl font-semibold text-gray-100 mb-4 flex items-center">
-              <Check className="text-green-500 mr-2" size={24} />
-              Processing Results
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-gray-100 flex items-center">
+                <Check className="text-green-500 mr-2" size={24} />
+                Processing Results
+              </h2>
+              <button
+                onClick={handleClearResults}
+                className="flex items-center text-red-400 hover:text-red-300 px-3 py-1 rounded-md hover:bg-gray-700 transition-colors"
+                title="Clear Results"
+              >
+                <Trash2 size={18} className="mr-1" />
+                <span>Clear Results</span>
+              </button>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-gray-700 bg-opacity-50 rounded-lg p-4">
@@ -272,7 +308,7 @@ const P1toGoogleForms = () => {
                             rel="noopener noreferrer"
                             className="text-blue-400 hover:underline text-sm truncate"
                           >
-                            Question {form.questionNumber}: {form.title}
+                             {form.title}
                           </a>
                         </li>
                       ))}

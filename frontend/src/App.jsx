@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import P1toGoogleForms from "./pages/P1toGoogleForms";
+import TestBuilder from "./pages/TestBuilder";
 import Sidebar from "./components/Sidebar";
 import FloatingShape from "./components/FloatingShapes";
 import SignUpPage from "./pages/SignUpPage";
@@ -108,6 +109,15 @@ function App() {
           }
         />
         <Route path="/P1togoogleforms" element={<P1toGoogleForms />} />
+        
+        <Route
+          path="/test-builder"
+          element={
+            <ProtectedRoute>
+              <TestBuilder />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
 
       <Toaster />

@@ -6,6 +6,7 @@ import { connectDB } from "./db/connectdb.js";
 import dotenv from "dotenv";
 import authRoutes from "./routes/auth.route.js";
 import questionsRoutes from "./routes/questions.route.js";
+import testRoutes from "./routes/test.route.js";
 import { initializeScheduler } from "./services/scheduler.js";
 
 dotenv.config();
@@ -23,6 +24,7 @@ app.use((req, res, next) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/questions", questionsRoutes);
+app.use("/api/tests", testRoutes);
 
 const startServer = async () => {
   try {

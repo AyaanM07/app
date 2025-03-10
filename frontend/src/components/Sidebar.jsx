@@ -23,7 +23,7 @@ const SIDEBAR_ITEMS = [
     name: "Test Builder",
     icon: BookCheckIcon,
     color: "#ffb793",
-    href: "/Test Builder",
+    href: "/test-builder",
   },
   { name: "Settings", icon: Settings, color: "#d8e4d4", href: "/Settings" },
   { name: "Help", icon: Info, color: "#f3f3b5", href: "/Help" },
