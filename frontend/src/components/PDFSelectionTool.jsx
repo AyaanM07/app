@@ -7,8 +7,16 @@ const PDFSelectionTool = ({ pageData, onSelectionComplete, existingSelections = 
   const [selections, setSelections] = useState(existingSelections);
   const containerRef = useRef(null);
 
+  // Update selections when existingSelections prop changes
+  useEffect(() => {
+    setSelections(existingSelections);
+  }, [existingSelections]);
+
   // Handle mouse events for selection
   const handleMouseDown = (e) => {
+    // Don't start selection if clicking on a button
+    if (e.target.tagName === 'BUTTON') return;
+    
     const container = containerRef.current;
     if (!container) return;
     
@@ -89,6 +97,7 @@ const PDFSelectionTool = ({ pageData, onSelectionComplete, existingSelections = 
 
   // Remove a selection
   const handleSelectionRemove = (id) => {
+    console.log("Removing selection:", id);
     const newSelections = selections.filter(s => s.id !== id);
     setSelections(newSelections);
     onSelectionComplete(newSelections);
@@ -98,7 +107,6 @@ const PDFSelectionTool = ({ pageData, onSelectionComplete, existingSelections = 
   const renderSelections = () => {
     if (!containerRef.current) return [];
     
-    const rect = containerRef.current.getBoundingClientRect();
     return selections.map(selection => {
       const style = {
         position: 'absolute',
@@ -108,20 +116,40 @@ const PDFSelectionTool = ({ pageData, onSelectionComplete, existingSelections = 
         height: `${selection.height * 100}%`,
         backgroundColor: 'rgba(255, 0, 0, 0.3)',
         border: '2px dashed red',
+        pointerEvents: 'none' // Container won't receive pointer events
+      };
+      
+      const buttonStyle = {
+        position: 'absolute',
+        right: '-10px',
+        top: '-10px',
+        width: '20px',
+        height: '20px',
+        borderRadius: '50%',
+        backgroundColor: 'red',
+        color: 'white',
         display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'flex-end'
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        fontSize: '14px',
+        pointerEvents: 'auto', // Button WILL receive pointer events
+        zIndex: 1000, // Ensure button is on top
+        boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
       };
       
       return (
         <div key={selection.id} style={style}>
-          <button 
-            onClick={() => handleSelectionRemove(selection.id)}
-            className="bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center 
-                       text-xs font-bold transform -translate-y-2 translate-x-2"
+          <div 
+            style={buttonStyle}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleSelectionRemove(selection.id);
+            }}
           >
             ×
-          </button>
+          </div>
         </div>
       );
     });

@@ -67,34 +67,6 @@ export const previewPdf = async (req, res) => {
   }
 };
 
-// Export endpoint
-export const exportPdf = async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: "No PDF file provided" });
-    }
-
-    // Parse selection data
-    const selectionData = JSON.parse(req.body.selectionData || '{}');
-    
-    // Process the PDF - extract only selected questions
-    const processedPdfBytes = await processSelectedQuestions(req.file.path, selectionData);
-    
-    // Send the processed PDF back to the client
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', 'attachment; filename=export.pdf');
-    res.send(processedPdfBytes);
-    
-    // Clean up temporary file
-    fs.unlink(req.file.path, (err) => {
-      if (err) console.error("Error deleting temporary file:", err);
-    });
-  } catch (error) {
-    console.error("Error exporting PDF:", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
 // Update the processSelectedQuestions function to only handle custom selections
 async function processSelectedQuestions(pdfPath, selectionData) {
   const { customSelections = [] } = selectionData;
@@ -168,27 +140,21 @@ async function processSelectedQuestions(pdfPath, selectionData) {
   return await newPdfDoc.save();
 }
 
-// The rest of your controller methods remain unchanged
+// Update the createTest function to not use subject and duration
 export const createTest = async (req, res) => {
   try {
-    const { title, subject, description, duration, questions } = req.body;
+    const { title, description, questions } = req.body;
     
     const newTest = new Test({
       title,
-      subject,
       description,
-      duration,
       questions,
       creator: req.user._id
     });
     
     await newTest.save();
     
-    res.status(201).json({
-      success: true,
-      message: "Test created successfully",
-      data: newTest
-    });
+    res.json({ success: true, data: newTest });
   } catch (error) {
     console.error("Error creating test:", error);
     res.status(500).json({ success: false, message: error.message });

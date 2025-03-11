@@ -8,7 +8,6 @@ import {
   deleteTest,
   uploadPdf,
   previewPdf,   // Add these two
-  exportPdf     // missing endpoints
 } from "../controllers/test.controller.js";
 import upload from "../middleware/uploadMiddleware.js";
 
@@ -29,6 +28,5 @@ router.post("/:id/upload-pdf", upload.single("pdf"), uploadPdf);
 
 // Add the missing routes
 router.post("/preview", upload.single("pdf"), previewPdf);
-router.post("/export", upload.single("pdf"), exportPdf);
 
 export default router;

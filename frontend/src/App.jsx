@@ -44,7 +44,7 @@ function App() {
   if (isCheckingAuth) return <LoadingSpinner />;
 
   // Define routes where the sidebar should be shown
-  const showSidebarRoutes = ["/", "/P1togoogleforms"];
+  const showSidebarRoutes = ["/", "/P1togoogleforms", "/test-builder"];
 
   // Check if the current route should show the sidebar
   const shouldShowSidebar = showSidebarRoutes.includes(location.pathname);

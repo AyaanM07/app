@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import Header from "../components/common/Header";
-import { Upload, File, Save, Eye, Download } from "lucide-react";
+import { Upload, File, Save, Eye } from "lucide-react";
 import toast from "react-hot-toast";
 import axios from "axios";
 import PDFSelectionTool from "../components/PDFSelectionTool";
@@ -11,12 +11,9 @@ const TestBuilder = () => {
   const [pdfPages, setPdfPages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isExporting, setIsExporting] = useState(false);
   const [test, setTest] = useState({
     title: "",
-    subject: "",
     description: "",
-    duration: 60,
     questions: []
   });
   const fileInputRef = useRef(null);
@@ -323,8 +320,11 @@ const TestBuilder = () => {
     setIsSaving(true);
     
     try {
-      // Just save the test without filtering by selectedQuestions
-      const response = await axios.post("/api/tests", test);
+      const response = await axios.post("/api/tests", {
+        title: test.title,
+        description: test.description,
+        questions: test.questions
+      });
       
       if (response.data.success) {
         const testId = response.data.data._id;
@@ -357,58 +357,6 @@ const TestBuilder = () => {
     }
   };
 
-  const handleExport = async () => {
-    if (!pdfFile) {
-      toast.error("Please upload a PDF file first");
-      return;
-    }
-    
-    try {
-      setIsExporting(true);
-      
-      // Create a form data object to send the PDF and selection data
-      const formData = new FormData();
-      formData.append("pdf", pdfFile);
-      
-      // Only send custom selections
-      const selectionData = JSON.stringify({
-        customSelections
-      });
-      formData.append("selectionData", selectionData);
-      
-      // Send to backend for processing
-      const response = await axios({
-        method: 'post',
-        url: '/api/tests/export',
-        data: formData,
-        responseType: 'blob',
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      
-      // Create a download link
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `${test.title || 'test'}.pdf`); 
-      document.body.appendChild(link);
-      link.click();
-      
-      // Clean up
-      URL.revokeObjectURL(url);
-      document.body.removeChild(link);
-      
-      toast.success("PDF exported successfully!");
-    } catch (error) {
-      console.error("Error exporting PDF:", error);
-      toast.error("Failed to export PDF: " + (error.response?.data?.message || error.message));
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
   return (
     <div className="flex-1 overflow-auto relative z-10">
       <Header title="Test Builder" />
@@ -438,20 +386,6 @@ const TestBuilder = () => {
               />
             </div>
             
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Subject
-              </label>
-              <input
-                type="text"
-                name="subject"
-                value={test.subject}
-                onChange={handleInputChange}
-                className="w-full bg-gray-700 text-white rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter subject"
-              />
-            </div>
-            
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Description
@@ -464,21 +398,6 @@ const TestBuilder = () => {
                 className="w-full bg-gray-700 text-white rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter test description"
               ></textarea>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Duration (minutes)
-              </label>
-              <input
-                type="number"
-                name="duration"
-                value={test.duration}
-                onChange={handleInputChange}
-                className="w-full bg-gray-700 text-white rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter duration in minutes"
-                min="1"
-              />
             </div>
           </div>
           
@@ -536,24 +455,6 @@ const TestBuilder = () => {
                     <>
                       <Eye size={18} className="mr-2" />
                       {showPreview ? "Edit Questions" : "Preview Selected"}
-                    </>
-                  )}
-                </button>
-                
-                <button 
-                  className="flex items-center px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg disabled:opacity-50"
-                  onClick={handleExport}
-                  disabled={isExporting || !pdfFile}
-                >
-                  {isExporting ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-t-white border-white border-opacity-50 rounded-full animate-spin mr-2"></div>
-                      Exporting...
-                    </>
-                  ) : (
-                    <>
-                      <Download size={18} className="mr-2" />
-                      Export PDF
                     </>
                   )}
                 </button>

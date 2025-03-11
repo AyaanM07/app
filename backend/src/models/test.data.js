@@ -28,10 +28,6 @@ const testSchema = new mongoose.Schema(
       ref: 'User',
       required: true
     },
-    subject: {
-      type: String,
-      default: "General"
-    },
     description: {
       type: String,
       default: ""
@@ -39,10 +35,6 @@ const testSchema = new mongoose.Schema(
     totalMarks: {
       type: Number,
       default: 0
-    },
-    duration: {
-      type: Number, // in minutes
-      default: 60
     },
     pdfUrl: {
       type: String
