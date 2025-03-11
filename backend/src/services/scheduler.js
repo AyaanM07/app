@@ -6,15 +6,44 @@ dotenv.config();
 
 const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
 
-// Function to check if current time matches user's posting time
-const checkPostingTime = (userPostingTime) => {
+// Updated function to check if scheduler should run today
+const checkPostingTime = (userPostingTime, skipDates = []) => {
   const now = new Date();
+  
+  // Check if current date is in skip dates list
+  if (skipDates && skipDates.length > 0) {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    today.setHours(0, 0, 0, 0); // Reset time part to make comparison easier
+    
+    console.log(`Checking skip dates for today: ${today.toISOString().split('T')[0]}`);
+    console.log(`Skip dates to check: ${JSON.stringify(skipDates)}`);
+    
+    // Check if any skip date matches today
+    for (const skipDate of skipDates) {
+      // Handle both string and Date object cases
+      const skipDay = new Date(skipDate);
+      skipDay.setHours(0, 0, 0, 0); // Reset time part to make comparison easier
+      
+      console.log(`Comparing with skip date: ${skipDay.toISOString().split('T')[0]}`);
+      
+      // Compare dates as strings in YYYY-MM-DD format for more reliable comparison
+      if (skipDay.toISOString().split('T')[0] === today.toISOString().split('T')[0]) {
+        console.log(`Match found! Skipping today's post.`);
+        return false; // Skip this day
+      }
+    }
+  }
+  
+  // Continue with regular time check
   const [hours, minutes] = userPostingTime.split(":");
-
   const utcHours = now.getUTCHours();
   const utcMinutes = now.getUTCMinutes();
-
-  return utcHours === parseInt(hours) && utcMinutes === parseInt(minutes);
+  
+  const timeMatch = utcHours === parseInt(hours) && utcMinutes === parseInt(minutes);
+  if (timeMatch) {
+    console.log(`Time match: ${utcHours}:${utcMinutes} matches scheduled ${hours}:${minutes}`);
+  }
+  return timeMatch;
 };
 
 // Function to post question for a user
@@ -152,7 +181,7 @@ const postEmailsForUser = async (user) => {
   }
 };
 
-// Initialize the scheduler
+// Update the scheduler initialization function
 export const initializeScheduler = () => {
   const runScheduler = async () => {
     try {
@@ -162,16 +191,19 @@ export const initializeScheduler = () => {
 
       for (const user of users) {
         const postingTime = user.settings?.globalConfig?.postingTime;
-        if (postingTime && checkPostingTime(postingTime)) {
+        const skipDates = user.settings?.globalConfig?.skipDates || [];
+        
+        if (postingTime && checkPostingTime(postingTime, skipDates)) {
           const questionResult = await postQuestionForUser(user);
           if (questionResult.success) {
             console.log(`Successfully posted question for user ${user.email}`);
+            
             // Also post emails after posting questions
             const emailResult = await postEmailsForUser(user);
             if (emailResult.success) {
               console.log(`Successfully posted emails for user ${user.email}`);
             } else {
-              console.error(`Failed to post emails for user ${user.email}: ${emailResult.error}`);
+              console.log(`Failed to post emails for user ${user.email}: ${emailResult.error}`);
             }
           } else {
             console.error(`Failed to post question for user ${user.email}: ${questionResult.error}`);

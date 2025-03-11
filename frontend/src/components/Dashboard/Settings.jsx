@@ -2,11 +2,17 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 import axios from "axios";
+import DatePicker from "react-datepicker"; 
+import "react-datepicker/dist/react-datepicker.css";
 
 const SettingsModal = ({ onClose }) => {
   const [postingTime, setPostingTime] = useState("09:00");
   const [sheetsId, setSheetsId] = useState("");
+  const [skipDates, setSkipDates] = useState([]);
   const { user } = useAuthStore();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   // Convert local time to UTC
   const convertToUTC = (localTime) => {
@@ -29,9 +35,10 @@ const SettingsModal = ({ onClose }) => {
   // Load existing settings when modal opens
   useEffect(() => {
     if (user?.settings?.globalConfig) {
-      const { postingTime, sheetsId } = user.settings.globalConfig;
+      const { postingTime, sheetsId, skipDates } = user.settings.globalConfig;
       setPostingTime(postingTime ? convertToLocal(postingTime) : "09:00");
       setSheetsId(sheetsId || "");
+      setSkipDates(skipDates ? skipDates.map(date => new Date(date)) : []);
     }
   }, [user]);
 
@@ -50,8 +57,27 @@ const SettingsModal = ({ onClose }) => {
     };
   }, [onClose]);
 
+  const handleDateSelect = (date) => {
+    const dateExists = skipDates.some(
+      skipDate => 
+        skipDate.toDateString() === date.toDateString()
+    );
+    
+    if (dateExists) {
+      setSkipDates(skipDates.filter(
+        skipDate => skipDate.toDateString() !== date.toDateString()
+      ));
+    } else {
+      setSkipDates([...skipDates, date]);
+    }
+  };
+
   const handleSave = async () => {
     try {
+      setIsLoading(true);
+      setError("");
+      setSuccess("");
+
       const currentSettings = user?.settings || {
         classConfigs: [],
         globalConfig: {},
@@ -60,16 +86,21 @@ const SettingsModal = ({ onClose }) => {
       currentSettings.globalConfig = {
         postingTime: convertToUTC(postingTime),
         sheetsId,
+        skipDates
       };
 
       await axios.put("/api/auth/settings", {
         settings: currentSettings,
       });
 
+      setSuccess("Settings updated successfully");
       onClose();
     } catch (error) {
+      setError(error.message || "An error occurred");
       console.error("Error saving settings:", error);
       alert("Failed to save settings");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -114,7 +145,47 @@ const SettingsModal = ({ onClose }) => {
               onChange={(e) => setSheetsId(e.target.value)}
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Skip Dates (No questions will be posted on selected dates)
+            </label>
+            <div className="calendar-container">
+              <DatePicker
+                inline
+                selected={null}
+                onChange={handleDateSelect}
+                highlightDates={skipDates}
+                minDate={new Date()}
+                className="skip-dates-calendar"
+              />
+            </div>
+            <div className="selected-dates mt-3">
+              <h5>Selected Skip Dates:</h5>
+              {skipDates.length === 0 ? (
+                <p>No dates selected</p>
+              ) : (
+                <ul className="skip-dates-list">
+                  {skipDates.sort((a, b) => a - b).map((date, idx) => (
+                    <li key={idx}>
+                      {date.toLocaleDateString()}
+                      <button 
+                        type="button" 
+                        onClick={() => handleDateSelect(date)} 
+                        className="btn-sm btn-danger ml-2"
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
         </div>
+
+        {error && <div className="alert alert-danger">{error}</div>}
+        {success && <div className="alert alert-success">{success}</div>}
 
         <div className="mt-6 flex justify-end space-x-4">
           <button
@@ -126,8 +197,9 @@ const SettingsModal = ({ onClose }) => {
           <button
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-400"
             onClick={handleSave}
+            disabled={isLoading}
           >
-            Save
+            {isLoading ? "Saving..." : "Save Settings"}
           </button>
         </div>
       </motion.div>
