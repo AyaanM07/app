@@ -1,6 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 
-const PDFSelectionTool = ({ pageData, onSelectionComplete, existingSelections = [] }) => {
+const PDFSelectionTool = ({ 
+  pageData, 
+  onSelectionComplete, 
+  existingSelections = [],
+  isCopyMode = false,
+  onCopyContent = null,
+  allowDrop = false,
+  onDropContent = null
+}) => {
   const [isSelecting, setIsSelecting] = useState(false);
   const [selectionStart, setSelectionStart] = useState({ x: 0, y: 0 });
   const [selectionEnd, setSelectionEnd] = useState({ x: 0, y: 0 });
@@ -64,20 +72,64 @@ const PDFSelectionTool = ({ pageData, onSelectionComplete, existingSelections = 
     if (Math.abs(selectionEnd.x - selectionStart.x) > MIN_SIZE && 
         Math.abs(selectionEnd.y - selectionStart.y) > MIN_SIZE) {
       
-      // Add new selection
-      const newSelections = [...selections, {
-        id: Date.now().toString(),
-        ...selection,
-        pageNumber: pageData.pageNumber
-      }];
-      
-      setSelections(newSelections);
-      
-      // Notify parent component
-      onSelectionComplete(newSelections);
+      // If in copy mode, trigger the onCopyContent callback instead of adding to selections
+      if (isCopyMode && onCopyContent) {
+        onCopyContent({
+          id: Date.now().toString(),
+          ...selection,
+          pageNumber: pageData.pageNumber
+        });
+      } else {
+        // Add new selection for masking
+        const newSelections = [...selections, {
+          id: Date.now().toString(),
+          ...selection,
+          pageNumber: pageData.pageNumber
+        }];
+        
+        setSelections(newSelections);
+        
+        // Notify parent component
+        onSelectionComplete(newSelections);
+      }
     }
     
     setIsSelecting(false);
+  };
+
+  // Handle drag events for drop target
+  const handleDragOver = (e) => {
+    if (allowDrop) {
+      e.preventDefault();
+    }
+  };
+
+  const handleDrop = (e) => {
+    if (!allowDrop || !onDropContent) return;
+    
+    e.preventDefault();
+    
+    const container = containerRef.current;
+    if (!container) return;
+    
+    const rect = container.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width;  // Normalize to 0-1
+    const y = (e.clientY - rect.top) / rect.height;  // Normalize to 0-1
+    
+    // Get the data from dataTransfer
+    try {
+      const contentData = JSON.parse(e.dataTransfer.getData('application/json'));
+      
+      // Notify parent about the drop with position and content data
+      onDropContent({
+        x, 
+        y,
+        pageNumber: pageData.pageNumber,
+        ...contentData
+      });
+    } catch (err) {
+      console.error("Error parsing drag data:", err);
+    }
   };
 
   // Normalize selection coordinates (x, y, width, height) to be relative to the image size (0-1)
@@ -172,8 +224,8 @@ const PDFSelectionTool = ({ pageData, onSelectionComplete, existingSelections = 
           top: `${top}px`,
           width: `${width}px`,
           height: `${height}px`,
-          backgroundColor: 'rgba(0, 0, 255, 0.2)',
-          border: '2px dashed blue'
+          backgroundColor: isCopyMode ? 'rgba(0, 255, 0, 0.2)' : 'rgba(0, 0, 255, 0.2)',
+          border: `2px dashed ${isCopyMode ? 'green' : 'blue'}`
         }}
       />
     );
@@ -182,11 +234,13 @@ const PDFSelectionTool = ({ pageData, onSelectionComplete, existingSelections = 
   return (
     <div 
       ref={containerRef}
-      className="relative cursor-crosshair"
+      className={`relative ${isCopyMode ? 'cursor-copy' : 'cursor-crosshair'} ${allowDrop ? 'drop-target' : ''}`}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
     >
       <img 
         src={pageData.dataUrl} 

@@ -67,12 +67,14 @@ export const previewPdf = async (req, res) => {
   }
 };
 
-// Update the processSelectedQuestions function to only handle custom selections
+// Update the processSelectedQuestions function to handle pasted content
+
 async function processSelectedQuestions(pdfPath, selectionData) {
-  const { customSelections = [] } = selectionData;
+  const { customSelections = [], pastedSelections = [] } = selectionData;
   
   console.log("Processing PDF:", pdfPath);
   console.log("Custom selections count:", customSelections.length);
+  console.log("Pasted selections count:", pastedSelections.length);
   
   // Read the PDF file
   const pdfBytes = fs.readFileSync(pdfPath);
@@ -81,8 +83,9 @@ async function processSelectedQuestions(pdfPath, selectionData) {
   // Create a new PDF document
   const newPdfDoc = await PDFDocument.create();
   
-  // Track which pages have selections
+  // Track which pages have selections and pastes
   const pageWithSelectionsMap = {};
+  const pageWithPastesMap = {};
   
   // Map custom selections to their pages
   customSelections.forEach(selection => {
@@ -91,6 +94,15 @@ async function processSelectedQuestions(pdfPath, selectionData) {
       pageWithSelectionsMap[pageIndex] = [];
     }
     pageWithSelectionsMap[pageIndex].push(selection);
+  });
+  
+  // Map pasted content to their pages
+  pastedSelections.forEach(paste => {
+    const pageIndex = paste.pageNumber - 1;
+    if (!pageWithPastesMap[pageIndex]) {
+      pageWithPastesMap[pageIndex] = [];
+    }
+    pageWithPastesMap[pageIndex].push(paste);
   });
   
   // Copy all pages from the original document
@@ -131,6 +143,54 @@ async function processSelectedQuestions(pdfPath, selectionData) {
           });
         }
       });
+    }
+    
+    // If page has pasted content, add the images
+    if (pageWithPastesMap[pageIndex] && pageWithPastesMap[pageIndex].length > 0) {
+      const { width, height } = copiedPage.getSize();
+      
+      // Process each paste on this page
+      for (const paste of pageWithPastesMap[pageIndex]) {
+        try {
+          // Convert normalized coordinates (0-1) to PDF coordinates
+          const x = paste.left * width;
+          const y = height - (paste.top * height) - (paste.height * height); // Flip Y coordinate
+          const pasteWidth = paste.width * width;
+          const pasteHeight = paste.height * height;
+          
+          console.log(`Pasting content on page ${pageIndex+1} at (${x}, ${y}) with size ${pasteWidth}x${pasteHeight}`);
+          
+          // Convert the data URL to a buffer
+          const base64Data = paste.content.split(',')[1];
+          if (!base64Data) {
+            console.error("Invalid paste data URL format");
+            continue;
+          }
+          
+          const imageBuffer = Buffer.from(base64Data, 'base64');
+          
+          // Determine image type and embed it
+          let image;
+          if (paste.content.includes('image/jpeg') || paste.content.includes('image/jpg')) {
+            image = await newPdfDoc.embedJpg(imageBuffer);
+          } else if (paste.content.includes('image/png')) {
+            image = await newPdfDoc.embedPng(imageBuffer);
+          } else {
+            // Default to PNG if type can't be determined
+            image = await newPdfDoc.embedPng(imageBuffer);
+          }
+          
+          // Draw the image on the page
+          copiedPage.drawImage(image, {
+            x,
+            y,
+            width: pasteWidth,
+            height: pasteHeight,
+          });
+        } catch (err) {
+          console.error("Error pasting image content:", err);
+        }
+      }
     }
     
     newPdfDoc.addPage(copiedPage);
