@@ -7,7 +7,7 @@ import {
   updateTest,
   deleteTest,
   uploadPdf,
-  previewPdf,   // Add these two
+  previewPdf, // Add these two
 } from "../controllers/test.controller.js";
 import upload from "../middleware/uploadMiddleware.js";
 

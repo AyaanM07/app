@@ -114,7 +114,7 @@ export const useAuthStore = create((set) => ({
     try {
       set({ isLoading: true });
       const response = await axios.put(`${API_URL}/settings`, { settings });
-      
+
       if (response.data.success) {
         set((state) => ({
           ...state,

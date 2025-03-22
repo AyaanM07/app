@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Trash2, Edit2 } from "lucide-react"; 
+import { Search, Plus, Trash2, Edit2 } from "lucide-react";
 import DirectoryModal from "./DirectoryModel";
 import SettingsModal from "./Settings";
 import AddClassModal from "./AddClassModal";
@@ -30,9 +30,9 @@ const ClassesTable = () => {
         .map((config, index) => ({
           id: index + 1,
           name: config.grade,
-          email: "Question 34 - Organic Chemistry" // Default question info
+          email: "Question 34 - Organic Chemistry", // Default question info
         }));
-      
+
       setClasses(sortedClasses);
       setFilteredClasses(sortedClasses);
     } else {
@@ -74,13 +74,13 @@ const ClassesTable = () => {
   const handleDeleteClass = async (classItem, event) => {
     // Prevent the click from bubbling up to the row's click handler
     event.stopPropagation();
-    
+
     // Show delete confirmation toast
     toast.custom(
       (t) => (
         <div
           className={`${
-            t.visible ? 'animate-enter' : 'animate-leave'
+            t.visible ? "animate-enter" : "animate-leave"
           } max-w-md w-full bg-gray-700 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
         >
           <div className="flex-1 w-0 p-4">
@@ -116,10 +116,10 @@ const ClassesTable = () => {
           </div>
         </div>
       ),
-      { position: "top-center", duration: 5000 }
+      { position: "top-center", duration: 5000 },
     );
   };
-  
+
   const executeDelete = async (classItem) => {
     try {
       // Get current settings
@@ -130,19 +130,19 @@ const ClassesTable = () => {
 
       // Filter out the class to delete
       currentSettings.classConfigs = currentSettings.classConfigs.filter(
-        (c) => c.grade !== classItem.name
+        (c) => c.grade !== classItem.name,
       );
 
       // Update settings in database
       await updateSettings(currentSettings);
-      
+
       // Update local state to reflect the deletion
-      const updatedClasses = classes.filter(c => c.name !== classItem.name);
+      const updatedClasses = classes.filter((c) => c.name !== classItem.name);
       setClasses(updatedClasses);
       setFilteredClasses(
-        filteredClasses.filter(c => c.name !== classItem.name)
+        filteredClasses.filter((c) => c.name !== classItem.name),
       );
-      
+
       // Show success toast
       toast.success(`${classItem.name} has been deleted successfully`);
     } catch (error) {
@@ -232,19 +232,21 @@ const ClassesTable = () => {
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">{classItem.email}</div>
+                    <div className="text-sm text-gray-300">
+                      {classItem.email}
+                    </div>
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
                     <div className="flex items-center space-x-3">
-                      <button 
+                      <button
                         className="text-indigo-400 hover:text-indigo-300 p-1 rounded-full hover:bg-gray-700"
                         onClick={() => handleClassClick(classItem)}
                         title="Edit"
                       >
                         <Edit2 size={18} />
                       </button>
-                      <button 
+                      <button
                         className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-gray-700"
                         onClick={(e) => handleDeleteClass(classItem, e)}
                         title="Delete"
@@ -272,9 +274,7 @@ const ClassesTable = () => {
       )}
 
       {isAddClassModalOpen && (
-        <AddClassModal 
-          onClose={() => setIsAddClassModalOpen(false)}
-        />
+        <AddClassModal onClose={() => setIsAddClassModalOpen(false)} />
       )}
     </>
   );

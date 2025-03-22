@@ -39,7 +39,7 @@ const AddClassModal = ({ onClose }) => {
 
       // Check if the grade already exists
       const exists = currentSettings.classConfigs.some(
-        (config) => config.grade === gradeName
+        (config) => config.grade === gradeName,
       );
 
       if (exists) {
@@ -92,7 +92,7 @@ const AddClassModal = ({ onClose }) => {
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-            Enter a grade number (e.g. 9 for Grade 9)
+              Enter a grade number (e.g. 9 for Grade 9)
             </label>
             <div className="flex items-center">
               <span className="bg-gray-700 text-gray-300 px-3 py-2 rounded-l-lg border-r border-gray-600">

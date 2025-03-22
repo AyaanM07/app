@@ -19,7 +19,8 @@ const P1toGoogleForms = () => {
   // Load saved folder IDs from user settings
   useEffect(() => {
     if (user?.settings?.p1ToFormsConfig) {
-      const { sourceFolderId, markschemeFolderId, targetFolderId } = user.settings.p1ToFormsConfig;
+      const { sourceFolderId, markschemeFolderId, targetFolderId } =
+        user.settings.p1ToFormsConfig;
       setFolders({
         sourceFolderId: sourceFolderId || "",
         markschemeFolderId: markschemeFolderId || "",
@@ -30,7 +31,7 @@ const P1toGoogleForms = () => {
 
   // Load processing results from local storage on component mount
   useEffect(() => {
-    const savedResults = localStorage.getItem('p1FormConversionResults');
+    const savedResults = localStorage.getItem("p1FormConversionResults");
     if (savedResults) {
       try {
         const parsedResults = JSON.parse(savedResults);
@@ -39,7 +40,7 @@ const P1toGoogleForms = () => {
       } catch (error) {
         console.error("Error parsing saved results:", error);
         // Clear corrupted data
-        localStorage.removeItem('p1FormConversionResults');
+        localStorage.removeItem("p1FormConversionResults");
       }
     }
   }, []);
@@ -47,15 +48,18 @@ const P1toGoogleForms = () => {
   const saveSettings = async () => {
     try {
       // Get current settings
-      const currentSettings = user?.settings || { classConfigs: [], globalConfig: {} };
-      
+      const currentSettings = user?.settings || {
+        classConfigs: [],
+        globalConfig: {},
+      };
+
       // Update or add p1ToFormsConfig
       currentSettings.p1ToFormsConfig = {
         sourceFolderId: folders.sourceFolderId,
         markschemeFolderId: folders.markschemeFolderId,
         targetFolderId: folders.targetFolderId,
       };
-      
+
       await updateSettings(currentSettings);
       toast.success("Settings saved successfully");
     } catch (error) {
@@ -66,15 +70,19 @@ const P1toGoogleForms = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFolders(prev => ({
+    setFolders((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleConvertPDFs = async () => {
     // Validate inputs
-    if (!folders.sourceFolderId || !folders.markschemeFolderId || !folders.targetFolderId) {
+    if (
+      !folders.sourceFolderId ||
+      !folders.markschemeFolderId ||
+      !folders.targetFolderId
+    ) {
       toast.error("All folder IDs are required");
       return;
     }
@@ -102,15 +110,15 @@ const P1toGoogleForms = () => {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         toast.success("PDFs converted successfully!", { id: toastId });
         setProcessingResults(result);
         setShowResults(true);
-        
+
         // Save results to localStorage
-        localStorage.setItem('p1FormConversionResults', JSON.stringify(result));
-        
+        localStorage.setItem("p1FormConversionResults", JSON.stringify(result));
+
         // Save settings after successful conversion
         await saveSettings();
       } else {
@@ -127,7 +135,7 @@ const P1toGoogleForms = () => {
   const handleClearResults = () => {
     setProcessingResults(null);
     setShowResults(false);
-    localStorage.removeItem('p1FormConversionResults');
+    localStorage.removeItem("p1FormConversionResults");
     toast.success("Results cleared");
   };
 
@@ -142,8 +150,10 @@ const P1toGoogleForms = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <h2 className="text-xl font-semibold text-gray-100 mb-4">Configuration</h2>
-          
+          <h2 className="text-xl font-semibold text-gray-100 mb-4">
+            Configuration
+          </h2>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Source Folder ID */}
             <div>
@@ -162,7 +172,7 @@ const P1toGoogleForms = () => {
                 Folder containing PDF question papers
               </p>
             </div>
-            
+
             {/* Markscheme Folder ID */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -180,7 +190,7 @@ const P1toGoogleForms = () => {
                 Folder containing PDF markschemes
               </p>
             </div>
-            
+
             {/* Target Folder ID */}
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -232,18 +242,31 @@ const P1toGoogleForms = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
         >
           <div className="flex items-start">
-            <AlertCircle className="text-yellow-400 mr-4 mt-1 flex-shrink-0" size={24} />
+            <AlertCircle
+              className="text-yellow-400 mr-4 mt-1 flex-shrink-0"
+              size={24}
+            />
             <div>
               <h3 className="text-lg font-semibold text-gray-100 mb-2">
                 Important Instructions
               </h3>
               <ul className="list-disc pl-5 text-gray-300 space-y-2">
-                <li>Ensure the source folder contains only the MCQ PDF papers you want to process</li>
-                <li>Markscheme PDFs should have the same file names as their corresponding question papers</li>
-                <li>The conversion might take a few minutes depending on the number of PDFs</li>
                 <li>
-                  <strong>Note:</strong> Questions with complex content like tables, graphs, or images 
-                  may need manual editing after conversion
+                  Ensure the source folder contains only the MCQ PDF papers you
+                  want to process
+                </li>
+                <li>
+                  Markscheme PDFs should have the same file names as their
+                  corresponding question papers
+                </li>
+                <li>
+                  The conversion might take a few minutes depending on the
+                  number of PDFs
+                </li>
+                <li>
+                  <strong>Note:</strong> Questions with complex content like
+                  tables, graphs, or images may need manual editing after
+                  conversion
                 </li>
               </ul>
             </div>
@@ -272,50 +295,62 @@ const P1toGoogleForms = () => {
                 <span>Clear Results</span>
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="bg-gray-700 bg-opacity-50 rounded-lg p-4">
-                <h3 className="text-md font-medium text-gray-300 mb-2">Summary</h3>
+                <h3 className="text-md font-medium text-gray-300 mb-2">
+                  Summary
+                </h3>
                 <ul className="space-y-2">
                   <li className="flex items-center justify-between">
                     <span className="text-gray-400">Files Processed:</span>
-                    <span className="text-white font-semibold">{processingResults.processedFiles || 0}</span>
+                    <span className="text-white font-semibold">
+                      {processingResults.processedFiles || 0}
+                    </span>
                   </li>
                   <li className="flex items-center justify-between">
                     <span className="text-gray-400">Forms Created:</span>
-                    <span className="text-green-500 font-semibold">{processingResults.formsCreated || 0}</span>
+                    <span className="text-green-500 font-semibold">
+                      {processingResults.formsCreated || 0}
+                    </span>
                   </li>
                   <li className="flex items-center justify-between">
                     <span className="text-gray-400">Errors:</span>
-                    <span className="text-red-500 font-semibold">{processingResults.errorCount || 0}</span>
+                    <span className="text-red-500 font-semibold">
+                      {processingResults.errorCount || 0}
+                    </span>
                   </li>
                 </ul>
               </div>
-              
-              {processingResults.forms && processingResults.forms.length > 0 && (
-                <div className="bg-gray-700 bg-opacity-50 rounded-lg p-4">
-                  <h3 className="text-md font-medium text-gray-300 mb-2">
-                    Created Forms ({processingResults.forms.length})
-                  </h3>
-                  <div className="max-h-64 overflow-y-auto">
-                    <ul className="space-y-2">
-                      {processingResults.forms.map((form, index) => (
-                        <li key={index} className="flex items-center">
-                          <FileText className="text-blue-400 mr-2" size={16} />
-                          <a 
-                            href={form.editUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-blue-400 hover:underline text-sm truncate"
-                          >
-                             {form.title}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
+
+              {processingResults.forms &&
+                processingResults.forms.length > 0 && (
+                  <div className="bg-gray-700 bg-opacity-50 rounded-lg p-4">
+                    <h3 className="text-md font-medium text-gray-300 mb-2">
+                      Created Forms ({processingResults.forms.length})
+                    </h3>
+                    <div className="max-h-64 overflow-y-auto">
+                      <ul className="space-y-2">
+                        {processingResults.forms.map((form, index) => (
+                          <li key={index} className="flex items-center">
+                            <FileText
+                              className="text-blue-400 mr-2"
+                              size={16}
+                            />
+                            <a
+                              href={form.editUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-400 hover:underline text-sm truncate"
+                            >
+                              {form.title}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           </motion.div>
         )}

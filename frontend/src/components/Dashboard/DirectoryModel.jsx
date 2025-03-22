@@ -8,7 +8,7 @@ const DirectoryModal = ({ classData, onClose }) => {
   const [group6Code, setGroup6Code] = useState("");
   const [group4Code, setGroup4Code] = useState("");
   const [singleClassCode, setSingleClassCode] = useState("");
-  const [startingQuestion, setStartingQuestion] = useState(1); 
+  const [startingQuestion, setStartingQuestion] = useState(1);
   const { user, updateSettings } = useAuthStore();
 
   // Check if this is grade 11 or above
@@ -24,7 +24,7 @@ const DirectoryModal = ({ classData, onClose }) => {
       if (config) {
         setFolderId(config.folderId || "");
         setStartingQuestion(config.startingQuestion || 1);
-        
+
         if (isHigherGrade) {
           setGroup6Code(config.group6Code || "");
           setGroup4Code(config.group4Code || "");
@@ -55,12 +55,12 @@ const DirectoryModal = ({ classData, onClose }) => {
     try {
       // First, check if the question number has changed and we need to update it in GAS
       const currentConfig = user?.settings?.classConfigs?.find(
-        c => c.grade === classData.name
+        (c) => c.grade === classData.name,
       );
-      
+
       const currentStartingQuestion = currentConfig?.startingQuestion || 1;
       const newStartingQuestion = parseInt(startingQuestion) || 1;
-      
+
       // If starting question number has changed, send request to update it in GAS
       if (currentStartingQuestion !== newStartingQuestion) {
         // Send request to update the starting question number
@@ -73,18 +73,21 @@ const DirectoryModal = ({ classData, onClose }) => {
             action: "setStartingNumber",
             data: {
               grade: classData.name,
-              number: newStartingQuestion
+              number: newStartingQuestion,
             },
           }),
         });
-        
+
         const result = await response.json();
         if (!result.success) {
-          console.warn("Failed to update starting question number in GAS:", result.error);
+          console.warn(
+            "Failed to update starting question number in GAS:",
+            result.error,
+          );
           // Continue with saving settings even if GAS update failed
         }
       }
-      
+
       // Get existing settings or initialize new ones
       const currentSettings = user?.settings || {
         classConfigs: [],
@@ -97,7 +100,7 @@ const DirectoryModal = ({ classData, onClose }) => {
       );
 
       let newConfig;
-      
+
       if (isHigherGrade) {
         newConfig = {
           grade: classData.name,
@@ -140,14 +143,14 @@ const DirectoryModal = ({ classData, onClose }) => {
         action: "postQuestions",
         data: {
           folderId: folderId,
-          classroomIds: isHigherGrade 
-            ? [group6Code, group4Code].filter(Boolean) 
+          classroomIds: isHigherGrade
+            ? [group6Code, group4Code].filter(Boolean)
             : [singleClassCode].filter(Boolean),
         },
       };
 
       console.log("Sending payload:", JSON.stringify(payload));
-      
+
       // Show a loading toast that we can update later
       const toastId = toast.loading("Posting questions...");
 
@@ -167,7 +170,9 @@ const DirectoryModal = ({ classData, onClose }) => {
       console.log("Response from server:", result);
 
       if (result.success) {
-        toast.success(result.message || "Questions posted successfully!", { id: toastId });
+        toast.success(result.message || "Questions posted successfully!", {
+          id: toastId,
+        });
         onClose();
       } else {
         throw new Error(result.error || "Failed to process request");
@@ -185,12 +190,15 @@ const DirectoryModal = ({ classData, onClose }) => {
         toast.error("Please set up a Sheets ID in the global settings first");
         return;
       }
-      
+
       // Get all class configs with folder IDs
       const folderIds = {};
-      
-      if (user?.settings?.classConfigs && user.settings.classConfigs.length > 0) {
-        user.settings.classConfigs.forEach(config => {
+
+      if (
+        user?.settings?.classConfigs &&
+        user.settings.classConfigs.length > 0
+      ) {
+        user.settings.classConfigs.forEach((config) => {
           if (config.folderId) {
             folderIds[config.grade] = config.folderId;
           } else {
@@ -198,24 +206,26 @@ const DirectoryModal = ({ classData, onClose }) => {
           }
         });
       }
-      
+
       // Make sure we have at least one valid folder ID
-      const hasValidFolder = Object.values(folderIds).some(id => id !== "");
+      const hasValidFolder = Object.values(folderIds).some((id) => id !== "");
       if (!hasValidFolder) {
-        toast.error("Please configure at least one folder ID in class settings");
+        toast.error(
+          "Please configure at least one folder ID in class settings",
+        );
         return;
       }
-      
+
       const payload = {
         action: "postEmails",
         data: {
           folderIds: folderIds,
-          sheetId: user.settings.globalConfig.sheetsId
+          sheetId: user.settings.globalConfig.sheetsId,
         },
       };
 
       console.log("Sending email payload:", JSON.stringify(payload));
-      
+
       // Show a loading toast that we can update later
       const toastId = toast.loading("Sending emails...");
 
@@ -229,14 +239,18 @@ const DirectoryModal = ({ classData, onClose }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          errorData.error || `HTTP error! status: ${response.status}`,
+        );
       }
 
       const result = await response.json();
       console.log("Response from server:", result);
 
       if (result.success) {
-        toast.success(result.message || "Emails sent successfully!", { id: toastId });
+        toast.success(result.message || "Emails sent successfully!", {
+          id: toastId,
+        });
         onClose();
       } else {
         throw new Error(result.error || "Failed to send emails");
@@ -283,7 +297,7 @@ const DirectoryModal = ({ classData, onClose }) => {
               This number will be used for the next question post
             </p>
           </div>
-          
+
           {isHigherGrade ? (
             // For Grade 11 and above - show both inputs
             <>

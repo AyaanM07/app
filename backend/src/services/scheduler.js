@@ -9,39 +9,49 @@ const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
 // Updated function to check if scheduler should run today
 const checkPostingTime = (userPostingTime, skipDates = []) => {
   const now = new Date();
-  
+
   // Check if current date is in skip dates list
   if (skipDates && skipDates.length > 0) {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     today.setHours(0, 0, 0, 0); // Reset time part to make comparison easier
-    
-    console.log(`Checking skip dates for today: ${today.toISOString().split('T')[0]}`);
+
+    console.log(
+      `Checking skip dates for today: ${today.toISOString().split("T")[0]}`,
+    );
     console.log(`Skip dates to check: ${JSON.stringify(skipDates)}`);
-    
+
     // Check if any skip date matches today
     for (const skipDate of skipDates) {
       // Handle both string and Date object cases
       const skipDay = new Date(skipDate);
       skipDay.setHours(0, 0, 0, 0); // Reset time part to make comparison easier
-      
-      console.log(`Comparing with skip date: ${skipDay.toISOString().split('T')[0]}`);
-      
+
+      console.log(
+        `Comparing with skip date: ${skipDay.toISOString().split("T")[0]}`,
+      );
+
       // Compare dates as strings in YYYY-MM-DD format for more reliable comparison
-      if (skipDay.toISOString().split('T')[0] === today.toISOString().split('T')[0]) {
+      if (
+        skipDay.toISOString().split("T")[0] ===
+        today.toISOString().split("T")[0]
+      ) {
         console.log(`Match found! Skipping today's post.`);
         return false; // Skip this day
       }
     }
   }
-  
+
   // Continue with regular time check
   const [hours, minutes] = userPostingTime.split(":");
   const utcHours = now.getUTCHours();
   const utcMinutes = now.getUTCMinutes();
-  
-  const timeMatch = utcHours === parseInt(hours) && utcMinutes === parseInt(minutes);
+
+  const timeMatch =
+    utcHours === parseInt(hours) && utcMinutes === parseInt(minutes);
   if (timeMatch) {
-    console.log(`Time match: ${utcHours}:${utcMinutes} matches scheduled ${hours}:${minutes}`);
+    console.log(
+      `Time match: ${utcHours}:${utcMinutes} matches scheduled ${hours}:${minutes}`,
+    );
   }
   return timeMatch;
 };
@@ -50,12 +60,15 @@ const checkPostingTime = (userPostingTime, skipDates = []) => {
 const postQuestionForUser = async (user) => {
   try {
     // Get class configs with active classroom codes
-    const activeConfigs = user.settings?.classConfigs?.filter(
-      config => (config.group6Code || config.group4Code) && config.folderId
-    ) || [];
-    
+    const activeConfigs =
+      user.settings?.classConfigs?.filter(
+        (config) => (config.group6Code || config.group4Code) && config.folderId,
+      ) || [];
+
     if (activeConfigs.length === 0) {
-      console.log(`User ${user.email} has no active class configurations. Skipping.`);
+      console.log(
+        `User ${user.email} has no active class configurations. Skipping.`,
+      );
       return { success: false, error: "No active class configurations" };
     }
 
@@ -64,10 +77,13 @@ const postQuestionForUser = async (user) => {
     for (const classConfig of activeConfigs) {
       // Get the starting question number from the class config
       const startingQuestion = classConfig.startingQuestion || 1;
-      
-      const classroomIds = [classConfig.group6Code, classConfig.group4Code].filter(Boolean);
+
+      const classroomIds = [
+        classConfig.group6Code,
+        classConfig.group4Code,
+      ].filter(Boolean);
       if (classroomIds.length === 0) continue;
-      
+
       const response = await fetch(`${API_BASE_URL}/api/questions`, {
         method: "POST",
         headers: {
@@ -78,7 +94,7 @@ const postQuestionForUser = async (user) => {
           data: {
             folderId: classConfig.folderId,
             classroomIds: classroomIds,
-            startingQuestion: startingQuestion
+            startingQuestion: startingQuestion,
           },
         }),
       });
@@ -91,34 +107,35 @@ const postQuestionForUser = async (user) => {
         if (result.nextQuestionNumber) {
           // Update the database with the next question number returned by the GAS script
           await User.updateOne(
-            { 
-              _id: user._id, 
-              "settings.classConfigs.grade": classConfig.grade 
+            {
+              _id: user._id,
+              "settings.classConfigs.grade": classConfig.grade,
             },
             {
               $set: {
-                "settings.classConfigs.$.startingQuestion": result.nextQuestionNumber
-              }
-            }
+                "settings.classConfigs.$.startingQuestion":
+                  result.nextQuestionNumber,
+              },
+            },
           );
         }
-        
+
         results.push({
           grade: classConfig.grade,
-          success: true
+          success: true,
         });
       } else {
         results.push({
           grade: classConfig.grade,
           success: false,
-          error: result.error || "Failed to post question"
+          error: result.error || "Failed to post question",
         });
       }
     }
 
     return {
-      success: results.some(r => r.success),
-      results: results
+      success: results.some((r) => r.success),
+      results: results,
     };
   } catch (error) {
     console.error(`Error posting question for user ${user.email}:`, error);
@@ -134,25 +151,29 @@ const postEmailsForUser = async (user) => {
   try {
     const sheetsId = user.settings?.globalConfig?.sheetsId;
     if (!sheetsId) {
-      console.log(`User ${user.email} has no sheets ID configured. Skipping email posting.`);
+      console.log(
+        `User ${user.email} has no sheets ID configured. Skipping email posting.`,
+      );
       return { success: false, error: "No sheets ID configured" };
     }
-    
+
     // Get all class configs with folder IDs
     const folderIds = {};
-    
+
     if (user.settings?.classConfigs && user.settings.classConfigs.length > 0) {
-      user.settings.classConfigs.forEach(config => {
+      user.settings.classConfigs.forEach((config) => {
         if (config.grade) {
           folderIds[config.grade] = config.folderId || "";
         }
       });
     }
-    
+
     // Make sure we have at least one valid folder ID
-    const hasValidFolder = Object.values(folderIds).some(id => id !== "");
+    const hasValidFolder = Object.values(folderIds).some((id) => id !== "");
     if (!hasValidFolder) {
-      console.log(`User ${user.email} has no valid folder IDs. Skipping email posting.`);
+      console.log(
+        `User ${user.email} has no valid folder IDs. Skipping email posting.`,
+      );
       return { success: false, error: "No valid folder IDs configured" };
     }
 
@@ -165,7 +186,7 @@ const postEmailsForUser = async (user) => {
         action: "postEmails",
         data: {
           folderIds: folderIds,
-          sheetId: sheetsId
+          sheetId: sheetsId,
         },
       }),
     });
@@ -192,21 +213,25 @@ export const initializeScheduler = () => {
       for (const user of users) {
         const postingTime = user.settings?.globalConfig?.postingTime;
         const skipDates = user.settings?.globalConfig?.skipDates || [];
-        
+
         if (postingTime && checkPostingTime(postingTime, skipDates)) {
           const questionResult = await postQuestionForUser(user);
           if (questionResult.success) {
             console.log(`Successfully posted question for user ${user.email}`);
-            
+
             // Also post emails after posting questions
             const emailResult = await postEmailsForUser(user);
             if (emailResult.success) {
               console.log(`Successfully posted emails for user ${user.email}`);
             } else {
-              console.log(`Failed to post emails for user ${user.email}: ${emailResult.error}`);
+              console.log(
+                `Failed to post emails for user ${user.email}: ${emailResult.error}`,
+              );
             }
           } else {
-            console.error(`Failed to post question for user ${user.email}: ${questionResult.error}`);
+            console.error(
+              `Failed to post question for user ${user.email}: ${questionResult.error}`,
+            );
           }
         }
       }

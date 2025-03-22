@@ -6,7 +6,7 @@ const subQuestionSchema = new mongoose.Schema({
   content: { type: String },
   isSelected: { type: Boolean, default: true },
   pageNumber: { type: Number },
-  marks: { type: Number, default: 0 }
+  marks: { type: Number, default: 0 },
 });
 
 const questionSchema = new mongoose.Schema({
@@ -14,38 +14,38 @@ const questionSchema = new mongoose.Schema({
   content: { type: String },
   isSelected: { type: Boolean, default: true },
   pageNumber: { type: Number },
-  subQuestions: [subQuestionSchema]
+  subQuestions: [subQuestionSchema],
 });
 
 const testSchema = new mongoose.Schema(
   {
     title: {
       type: String,
-      required: true
+      required: true,
     },
     creator: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+      ref: "User",
+      required: true,
     },
     description: {
       type: String,
-      default: ""
+      default: "",
     },
     totalMarks: {
       type: Number,
-      default: 0
+      default: 0,
     },
     pdfUrl: {
-      type: String
+      type: String,
     },
     questions: [questionSchema],
     isPublished: {
       type: Boolean,
-      default: false
-    }
+      default: false,
+    },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 export const Test = mongoose.model("Test", testSchema);

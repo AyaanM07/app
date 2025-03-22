@@ -12,64 +12,75 @@ const GOOGLE_SCRIPT_URL_FORMS = process.env.GOOGLE_SCRIPT_URL_FORMS;
 router.post("/", async (req, res) => {
   try {
     const { action, data } = req.body;
-    
+
     // Determine which script URL to use based on the action
     let scriptUrl;
-    
+
     // Actions for the P1toGoogleForms script
     if (action === "convertPDFsToForms") {
       scriptUrl = GOOGLE_SCRIPT_URL_FORMS;
       // Validate inputs
-      if (!data.sourceFolderId || !data.markschemeFolderId || !data.targetFolderId) {
+      if (
+        !data.sourceFolderId ||
+        !data.markschemeFolderId ||
+        !data.targetFolderId
+      ) {
         return res.status(400).json({
           success: false,
-          error: "Missing required fields for PDF conversion"
+          error: "Missing required fields for PDF conversion",
         });
       }
-    } 
+    }
     // Actions for the Scheduler script
-    else if (["postQuestions", "postEmails", "setStartingNumber"].includes(action)) {
+    else if (
+      ["postQuestions", "postEmails", "setStartingNumber"].includes(action)
+    ) {
       scriptUrl = GOOGLE_SCRIPT_URL_SCHEDULER;
-      
+
       // Validate specific action inputs
       if (action === "postQuestions") {
-        if (!data.folderId || (!data.classroomIds || data.classroomIds.length === 0)) {
+        if (
+          !data.folderId ||
+          !data.classroomIds ||
+          data.classroomIds.length === 0
+        ) {
           return res.status(400).json({
             success: false,
-            error: "Missing required fields: folderId or classroomIds"
+            error: "Missing required fields: folderId or classroomIds",
           });
         }
       } else if (action === "postEmails") {
         if (!data.folderIds || !data.sheetId) {
           return res.status(400).json({
             success: false,
-            error: "Missing required fields for email posting: folderIds or sheetId"
+            error:
+              "Missing required fields for email posting: folderIds or sheetId",
           });
         }
       } else if (action === "setStartingNumber") {
         if (!data.grade || !data.number) {
           return res.status(400).json({
             success: false,
-            error: "Missing required fields for setting starting number: grade or number"
+            error:
+              "Missing required fields for setting starting number: grade or number",
           });
         }
       }
-    } 
-    else {
+    } else {
       return res.status(400).json({
         success: false,
-        error: "Unknown action type"
+        error: "Unknown action type",
       });
     }
-    
+
     // Make sure we have a valid script URL
     if (!scriptUrl) {
       return res.status(500).json({
         success: false,
-        error: "No script URL configured for this action"
+        error: "No script URL configured for this action",
       });
     }
-    
+
     // Proceed with sending the request to the appropriate Google Script
     const formData = new URLSearchParams();
     formData.append("payload", JSON.stringify(req.body));
@@ -92,12 +103,12 @@ router.post("/", async (req, res) => {
       return res.json(jsonData);
     } catch (e) {
       console.error("Error parsing Google Script response as JSON:", e);
-      
+
       // Return a properly structured error response
       return res.status(200).json({
         success: false,
         error: "Invalid response from Google Script",
-        message: responseText
+        message: responseText,
       });
     }
   } catch (error) {

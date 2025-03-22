@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 import axios from "axios";
-import DatePicker from "react-datepicker"; 
+import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 const SettingsModal = ({ onClose }) => {
@@ -38,7 +38,7 @@ const SettingsModal = ({ onClose }) => {
       const { postingTime, sheetsId, skipDates } = user.settings.globalConfig;
       setPostingTime(postingTime ? convertToLocal(postingTime) : "09:00");
       setSheetsId(sheetsId || "");
-      setSkipDates(skipDates ? skipDates.map(date => new Date(date)) : []);
+      setSkipDates(skipDates ? skipDates.map((date) => new Date(date)) : []);
     }
   }, [user]);
 
@@ -59,14 +59,15 @@ const SettingsModal = ({ onClose }) => {
 
   const handleDateSelect = (date) => {
     const dateExists = skipDates.some(
-      skipDate => 
-        skipDate.toDateString() === date.toDateString()
+      (skipDate) => skipDate.toDateString() === date.toDateString(),
     );
-    
+
     if (dateExists) {
-      setSkipDates(skipDates.filter(
-        skipDate => skipDate.toDateString() !== date.toDateString()
-      ));
+      setSkipDates(
+        skipDates.filter(
+          (skipDate) => skipDate.toDateString() !== date.toDateString(),
+        ),
+      );
     } else {
       setSkipDates([...skipDates, date]);
     }
@@ -86,7 +87,7 @@ const SettingsModal = ({ onClose }) => {
       currentSettings.globalConfig = {
         postingTime: convertToUTC(postingTime),
         sheetsId,
-        skipDates
+        skipDates,
       };
 
       await axios.put("/api/auth/settings", {
@@ -166,18 +167,20 @@ const SettingsModal = ({ onClose }) => {
                 <p>No dates selected</p>
               ) : (
                 <ul className="skip-dates-list">
-                  {skipDates.sort((a, b) => a - b).map((date, idx) => (
-                    <li key={idx}>
-                      {date.toLocaleDateString()}
-                      <button 
-                        type="button" 
-                        onClick={() => handleDateSelect(date)} 
-                        className="btn-sm btn-danger ml-2"
-                      >
-                        ✕
-                      </button>
-                    </li>
-                  ))}
+                  {skipDates
+                    .sort((a, b) => a - b)
+                    .map((date, idx) => (
+                      <li key={idx}>
+                        {date.toLocaleDateString()}
+                        <button
+                          type="button"
+                          onClick={() => handleDateSelect(date)}
+                          className="btn-sm btn-danger ml-2"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
                 </ul>
               )}
             </div>
