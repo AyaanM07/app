@@ -58,6 +58,24 @@ const TestBuilder = () => {
     loadScripts();
   }, []);
 
+  // Add this effect to warn users before leaving the page
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      // Only show warning if they've started working
+      if (test.title || customSelections.length > 0 || pastedSelections.length > 0) {
+        const message = "You have unsaved changes. Are you sure you want to leave?";
+        e.returnValue = message;
+        return message;
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [test, customSelections, pastedSelections]);
+
   const processPdfFile = async (file, isSource = false) => {
     if (!file) return null;
 
@@ -300,9 +318,35 @@ const TestBuilder = () => {
   };
 
   const handleAreaSelections = (selections) => {
-    setCustomSelections(selections);
-    setPreviewPdfUrl(null); // Clear preview when selections change
-    setShowPreview(false);
+    // If selections array is empty, it means all selections for this page were removed
+    // We need to get the page number from the event or context
+    
+    // Get current page number - either from first selection or from a different source
+    let currentPageNumber;
+    
+    if (selections.length > 0) {
+      currentPageNumber = selections[0]?.pageNumber;
+    } else {
+      // If no selections left, we need to know which page they were deleted from
+      // This should be available in the selections parameter from PDFSelectionTool
+      currentPageNumber = selections.pageNumber;
+    }
+    
+    if (!currentPageNumber) {
+      console.error("Could not determine page number for selection update");
+      return;
+    }
+    
+    // Keep all selections from other pages, and update only the current page's selections
+    setCustomSelections((prevSelections) => {
+      // Remove previous selections for this page
+      const otherPageSelections = prevSelections.filter(
+        (sel) => sel.pageNumber !== currentPageNumber
+      );
+      
+      // Add the new selections for the current page (which might be an empty array)
+      return [...otherPageSelections, ...selections];
+    });
   };
 
   // Add a new component for the draggable copied content

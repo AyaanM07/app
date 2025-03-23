@@ -160,12 +160,23 @@ const PDFSelectionTool = ({
     };
   };
 
-  // Remove a selection
+  // Update the handleSelectionRemove function
   const handleSelectionRemove = (id) => {
     console.log("Removing selection:", id);
+    
+    // First update the local state
     const newSelections = selections.filter((s) => s.id !== id);
     setSelections(newSelections);
-    onSelectionComplete(newSelections);
+    
+    // Then ensure we call onSelectionComplete with the updated selections
+    // This is critical - we need to make sure the parent component knows about the change
+    if (onSelectionComplete) {
+      // Important: Include the pageNumber so the parent can track which page this belongs to
+      onSelectionComplete(newSelections.map(sel => ({
+        ...sel,
+        pageNumber: pageData.pageNumber
+      })));
+    }
   };
 
   // Draw selections on the canvas
@@ -199,14 +210,14 @@ const PDFSelectionTool = ({
         cursor: "pointer",
         fontWeight: "bold",
         fontSize: "14px",
-        pointerEvents: "auto", // Button WILL receive pointer events
+        pointerEvents: "auto", // Make sure button WILL receive pointer events
         zIndex: 1000, // Ensure button is on top
         boxShadow: "0 2px 4px rgba(0,0,0,0.3)",
       };
 
       return (
         <div key={selection.id} style={style}>
-          <div
+          <button
             style={buttonStyle}
             onClick={(e) => {
               e.stopPropagation();
@@ -214,7 +225,7 @@ const PDFSelectionTool = ({
             }}
           >
             ×
-          </div>
+          </button>
         </div>
       );
     });
