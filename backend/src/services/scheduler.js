@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.API_BASE_URL || "http://localhost:4545";
 
 // Updated function to check if scheduler should run today
 const checkPostingTime = (userPostingTime, skipDates = []) => {

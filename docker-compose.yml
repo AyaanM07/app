@@ -1,0 +1,8 @@
+services:
+  backend:
+    container_name: oneq_backend
+    build: ./backend
+    ports:
+      - "${PORT}:${PORT}"
+    env_file:
+      - .env
