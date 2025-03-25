@@ -5,6 +5,7 @@ import {
   LibraryBig,
   Settings,
   Menu,
+  FileText,
 } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -18,6 +19,12 @@ const SIDEBAR_ITEMS = [
     icon: Brain,
     color: "#66cdaa",
     href: "/P1togoogleforms",
+  },
+  {
+    name: "Forms Management",
+    icon: FileText,
+    color: "#9370db",
+    href: "/forms-management",
   },
   {
     name: "Test Builder",
