@@ -27,6 +27,7 @@ const userSchema = new mongoose.Schema(
           group4Code: String,
           folderId: String,
           startingQuestion: Number,
+          lastPostedForm: String,
         },
       ],
       globalConfig: {
