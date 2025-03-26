@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, Plus, Trash2, Edit2 } from "lucide-react";
+import { Search, Plus, Trash2, Edit2, ExternalLink, Book } from "lucide-react";
 import DirectoryModal from "./DirectoryModel";
 import SettingsModal from "./Settings";
 import AddClassModal from "./AddClassModal";
 import { useAuthStore } from "../../store/authStore";
+import { useFormsStore } from "../../store/formsStore";
+import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const ClassesTable = () => {
@@ -16,6 +18,8 @@ const ClassesTable = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isAddClassModalOpen, setIsAddClassModalOpen] = useState(false);
   const { user, updateSettings } = useAuthStore();
+  const { formsByClass, fetchFormsByClass, getTodaysFormForClass } = useFormsStore();
+  const navigate = useNavigate();
 
   // Load classes from user settings
   useEffect(() => {
@@ -27,25 +31,40 @@ const ClassesTable = () => {
           const gradeB = parseInt(b.grade.replace("Grade ", ""));
           return gradeB - gradeA;
         })
-        .map((config, index) => ({
-          id: index + 1,
-          name: config.grade,
-          email: "Question 34 - Organic Chemistry", // Default question info
-        }));
+        .map((config, index) => {
+          // Get today's form for the class if available
+          const todayForm = getTodaysFormForClass(config.grade);
+          
+          return {
+            id: index + 1,
+            name: config.grade,
+            folderId: config.folderId || "",
+            // Use the last posted form title if available, otherwise use today's form or default text
+            email: config.lastPostedForm || (todayForm ? `${todayForm.name}` : "No form available"),
+            formUrl: todayForm ? todayForm.url : null
+          };
+        });
 
       setClasses(sortedClasses);
       setFilteredClasses(sortedClasses);
+      
+      // Fetch forms for each class
+      sortedClasses.forEach(classItem => {
+        if (classItem.folderId && !formsByClass[classItem.name]) {
+          fetchFormsByClass(classItem.name, classItem.folderId);
+        }
+      });
     } else {
       // Set default classes if none exist
       const defaultClasses = [
-        { id: 1, name: "Grade 12", email: "Question 34 - Organic Chemistry" },
-        { id: 2, name: "Grade 11", email: "Question 34 - Organic Chemistry" },
-        { id: 3, name: "Grade 10", email: "Question 34 - Organic Chemistry" },
+        { id: 1, name: "Grade 12", email: "No form available" },
+        { id: 2, name: "Grade 11", email: "No form available" },
+        { id: 3, name: "Grade 10", email: "No form available" },
       ];
       setClasses(defaultClasses);
       setFilteredClasses(defaultClasses);
     }
-  }, [user]);
+  }, [user, formsByClass]);
 
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
@@ -151,6 +170,20 @@ const ClassesTable = () => {
     }
   };
 
+  // Handle view all forms for a class
+  const handleViewAllForms = (classItem, event) => {
+    event.stopPropagation();
+    navigate(`/forms/${classItem.name}`);
+  };
+  
+  // Handle form click - open in new tab
+  const handleFormClick = (classItem, event) => {
+    event.stopPropagation();
+    if (classItem.formUrl) {
+      window.open(classItem.formUrl, '_blank');
+    }
+  };
+
   return (
     <>
       <motion.div
@@ -197,7 +230,7 @@ const ClassesTable = () => {
                   Class
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
-                  Question
+                  Latest Posted Form
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
                   Actions
@@ -232,7 +265,10 @@ const ClassesTable = () => {
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-300">
+                    <div 
+                      className={`text-sm ${classItem.formUrl ? 'text-blue-300 cursor-pointer hover:underline' : 'text-gray-300'}`}
+                      onClick={(e) => classItem.formUrl && handleFormClick(classItem, e)}
+                    >
                       {classItem.email}
                     </div>
                   </td>
@@ -246,6 +282,22 @@ const ClassesTable = () => {
                       >
                         <Edit2 size={18} />
                       </button>
+                      <button
+                        className="text-blue-400 hover:text-blue-300 p-1 rounded-full hover:bg-gray-700"
+                        onClick={(e) => handleViewAllForms(classItem, e)}
+                        title="View All Forms"
+                      >
+                        <Book size={18} />
+                      </button>
+                      {classItem.formUrl && (
+                        <button
+                          className="text-green-400 hover:text-green-300 p-1 rounded-full hover:bg-gray-700"
+                          onClick={(e) => handleFormClick(classItem, e)}
+                          title="Open Today's Form"
+                        >
+                          <ExternalLink size={18} />
+                        </button>
+                      )}
                       <button
                         className="text-red-400 hover:text-red-300 p-1 rounded-full hover:bg-gray-700"
                         onClick={(e) => handleDeleteClass(classItem, e)}

@@ -10,6 +10,8 @@ import { Toaster } from "react-hot-toast";
 import { useAuthStore } from "./store/authStore";
 import { useEffect } from "react";
 import LoadingSpinner from "./components/AuthPage/LoadingSpinner";
+import FormsManagement from "./pages/FormsManagement";
+import FormsManagementDashboard from "./pages/FormsManagementDashboard";
 
 // Protect routes that require authentication
 const ProtectedRoute = ({ children }) => {
@@ -115,6 +117,22 @@ function App() {
           element={
             <ProtectedRoute>
               <TestBuilder />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/forms/:className"
+          element={
+            <ProtectedRoute>
+              <FormsManagement />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/forms-management"
+          element={
+            <ProtectedRoute>
+              <FormsManagementDashboard />
             </ProtectedRoute>
           }
         />

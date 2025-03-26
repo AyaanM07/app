@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useAuthStore } from "../../store/authStore";
 import toast from "react-hot-toast";
+import { useFormsStore } from "../../store/formsStore";
 
 const DirectoryModal = ({ classData, onClose }) => {
   const [folderId, setFolderId] = useState("");
@@ -10,6 +11,7 @@ const DirectoryModal = ({ classData, onClose }) => {
   const [singleClassCode, setSingleClassCode] = useState("");
   const [startingQuestion, setStartingQuestion] = useState(1);
   const { user, updateSettings } = useAuthStore();
+  const { fetchFormsByClass } = useFormsStore();
 
   // Check if this is grade 11 or above
   const gradeNumber = parseInt(classData.name.replace("Grade ", ""), 10);
@@ -108,6 +110,7 @@ const DirectoryModal = ({ classData, onClose }) => {
           group6Code,
           group4Code,
           startingQuestion: newStartingQuestion, // Use the new starting question
+          lastPostedForm: currentConfig?.lastPostedForm || "No form posted yet" // Preserve or initialize
         };
       } else {
         // For lower grades, store the single code in group6Code field
@@ -117,6 +120,7 @@ const DirectoryModal = ({ classData, onClose }) => {
           group6Code: singleClassCode,
           group4Code: "", // Empty for lower grades
           startingQuestion: newStartingQuestion, // Use the new starting question
+          lastPostedForm: currentConfig?.lastPostedForm || "No form posted yet" // Preserve or initialize
         };
       }
 
@@ -129,6 +133,20 @@ const DirectoryModal = ({ classData, onClose }) => {
       // Update settings in database
       await updateSettings(currentSettings);
       toast.success(`Settings for ${classData.name} saved successfully`);
+      
+      // After successful save, fetch forms if folder ID is provided
+      if (folderId) {
+        toast.promise(
+          fetchFormsByClass(classData.name, folderId),
+          {
+            loading: 'Fetching forms...',
+            success: 'Forms fetched successfully',
+            error: 'Failed to fetch forms'
+          }
+        );
+      }
+      
+      // Close the modal
       onClose();
     } catch (error) {
       console.error("Error saving settings:", error);

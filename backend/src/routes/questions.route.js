@@ -8,6 +8,8 @@ dotenv.config();
 // Get the URLs for different GAS scripts
 const GOOGLE_SCRIPT_URL_SCHEDULER = process.env.GOOGLE_SCRIPT_URL_SCHEDULER;
 const GOOGLE_SCRIPT_URL_FORMS = process.env.GOOGLE_SCRIPT_URL_FORMS;
+// Add this constant at the top with your other constants
+const GOOGLE_SCRIPT_URL_FORM_EXTRACTOR = process.env.GOOGLE_SCRIPT_URL_FORM_EXTRACTOR;
 
 router.post("/", async (req, res) => {
   try {
@@ -116,6 +118,88 @@ router.post("/", async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
+    });
+  }
+});
+
+// Add a new GET endpoint to fetch forms from a folder
+router.get("/forms", async (req, res) => {
+  try {
+    const { folderId } = req.query;
+    
+    if (!folderId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required folderId parameter"
+      });
+    }
+    
+    // Use the same Google Script URL but with a get request
+    const scriptUrl = `${GOOGLE_SCRIPT_URL_FORMS}?folderId=${folderId}`;
+    
+    console.log(`Fetching forms from folder: ${folderId}`);
+    const response = await fetch(scriptUrl);
+    
+    const responseText = await response.text();
+    console.log("Raw response from Google Script:", responseText);
+    
+    try {
+      // Try to parse as JSON
+      const jsonData = JSON.parse(responseText);
+      return res.json(jsonData);
+    } catch (e) {
+      return res.status(500).json({
+        success: false,
+        error: "Invalid response from Google Script",
+        data: responseText
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching forms:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update or add a route to use this new script
+router.get("/forms-extract", async (req, res) => {
+  try {
+    const { folderId } = req.query;
+    
+    if (!folderId) {
+      return res.status(400).json({
+        success: false,
+        error: "Missing required folderId parameter"
+      });
+    }
+    
+    // Use the new script URL
+    const scriptUrl = `${GOOGLE_SCRIPT_URL_FORM_EXTRACTOR}?folderId=${folderId}`;
+    
+    console.log(`Extracting forms from folder: ${folderId}`);
+    const response = await fetch(scriptUrl);
+    
+    const responseText = await response.text();
+    console.log("Raw response from Form Extractor Script:", responseText);
+    
+    try {
+      // Try to parse as JSON
+      const jsonData = JSON.parse(responseText);
+      return res.json(jsonData);
+    } catch (e) {
+      return res.status(500).json({
+        success: false,
+        error: "Invalid response from Form Extractor Script",
+        data: responseText
+      });
+    }
+  } catch (error) {
+    console.error("Error extracting forms:", error);
+    return res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
