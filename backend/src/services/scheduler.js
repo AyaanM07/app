@@ -77,12 +77,25 @@ const postQuestionForUser = async (user) => {
     for (const classConfig of activeConfigs) {
       // Get the starting question number from the class config
       const startingQuestion = classConfig.startingQuestion || 1;
+      
+      // Add debug logging
+      console.log(`Posting question for ${classConfig.grade} starting from question #${startingQuestion}`);
 
       const classroomIds = [
         classConfig.group6Code,
         classConfig.group4Code,
       ].filter(Boolean);
       if (classroomIds.length === 0) continue;
+
+      // Log the payload being sent
+      console.log("Sending payload:", JSON.stringify({
+        action: "postQuestions",
+        data: {
+          folderId: classConfig.folderId,
+          classroomIds: classroomIds,
+          startingQuestion: startingQuestion,
+        },
+      }));
 
       const response = await fetch(`${API_BASE_URL}/api/questions`, {
         method: "POST",
@@ -100,6 +113,7 @@ const postQuestionForUser = async (user) => {
       });
 
       const result = await response.json();
+      console.log(`Result for ${classConfig.grade}:`, result);
 
       if (result.success) {
         // If the GAS script handles incrementation, we'll trust it did so correctly
@@ -157,13 +171,15 @@ const postEmailsForUser = async (user) => {
       return { success: false, error: "No sheets ID configured" };
     }
 
-    // Get all class configs with folder IDs
+    // Get all class configs with folder IDs AND starting question numbers
     const folderIds = {};
+    const startingQuestions = {}; // Add this to track starting question numbers
 
     if (user.settings?.classConfigs && user.settings.classConfigs.length > 0) {
       user.settings.classConfigs.forEach((config) => {
         if (config.grade) {
           folderIds[config.grade] = config.folderId || "";
+          startingQuestions[config.grade] = config.startingQuestion || 1; // Store the starting question
         }
       });
     }
@@ -177,6 +193,16 @@ const postEmailsForUser = async (user) => {
       return { success: false, error: "No valid folder IDs configured" };
     }
 
+    // Log what we're sending
+    console.log("Email posting payload:", JSON.stringify({
+      action: "postEmails",
+      data: {
+        folderIds: folderIds,
+        sheetId: sheetsId,
+        startingQuestions: startingQuestions, // Include starting questions
+      }
+    }));
+
     const response = await fetch(`${API_BASE_URL}/api/questions`, {
       method: "POST",
       headers: {
@@ -187,11 +213,31 @@ const postEmailsForUser = async (user) => {
         data: {
           folderIds: folderIds,
           sheetId: sheetsId,
+          startingQuestions: startingQuestions, // Include starting questions in the API call
         },
       }),
     });
 
     const result = await response.json();
+    
+    // If the email posting returns updated question numbers, update them in the database
+    if (result.success && result.updatedQuestions) {
+      // Update each class's starting question if it was changed
+      for (const [grade, newNumber] of Object.entries(result.updatedQuestions)) {
+        await User.updateOne(
+          {
+            _id: user._id,
+            "settings.classConfigs.grade": grade,
+          },
+          {
+            $set: {
+              "settings.classConfigs.$.startingQuestion": newNumber,
+            },
+          }
+        );
+      }
+    }
+    
     return result;
   } catch (error) {
     console.error(`Error posting emails for user ${user.email}:`, error);

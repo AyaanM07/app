@@ -193,6 +193,7 @@ const DirectoryModal = ({ classData, onClose }) => {
 
       // Get all class configs with folder IDs
       const folderIds = {};
+      const startingQuestions = {}; // Add this to track starting question numbers
 
       if (
         user?.settings?.classConfigs &&
@@ -201,8 +202,10 @@ const DirectoryModal = ({ classData, onClose }) => {
         user.settings.classConfigs.forEach((config) => {
           if (config.folderId) {
             folderIds[config.grade] = config.folderId;
+            startingQuestions[config.grade] = config.startingQuestion || 1; // Store the starting question
           } else {
-            folderIds[config.grade] = ""; // Include class with empty folder ID
+            folderIds[config.grade] = ""; 
+            startingQuestions[config.grade] = config.startingQuestion || 1; 
           }
         });
       }
@@ -221,6 +224,7 @@ const DirectoryModal = ({ classData, onClose }) => {
         data: {
           folderIds: folderIds,
           sheetId: user.settings.globalConfig.sheetsId,
+          startingQuestions: startingQuestions, // Include starting questions
         },
       };
 
@@ -238,10 +242,7 @@ const DirectoryModal = ({ classData, onClose }) => {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(
-          errorData.error || `HTTP error! status: ${response.status}`,
-        );
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
@@ -251,12 +252,34 @@ const DirectoryModal = ({ classData, onClose }) => {
         toast.success(result.message || "Emails sent successfully!", {
           id: toastId,
         });
+        
+        // If the API returns updated question numbers, update them in your state
+        if (result.updatedQuestions) {
+          // Create a copy of the current settings to update
+          const updatedSettings = JSON.parse(JSON.stringify(user.settings));
+          
+          // Update each class's starting question if it was changed
+          for (const grade in result.updatedQuestions) {
+            const classConfigIndex = updatedSettings.classConfigs.findIndex(
+              config => config.grade === grade
+            );
+            
+            if (classConfigIndex !== -1) {
+              updatedSettings.classConfigs[classConfigIndex].startingQuestion = 
+                result.updatedQuestions[grade];
+            }
+          }
+          
+          // Update the settings in your store
+          await updateSettings(updatedSettings);
+        }
+        
         onClose();
       } else {
         throw new Error(result.error || "Failed to send emails");
       }
     } catch (error) {
-      console.error("Error sending email request:", error);
+      console.error("Error sending emails:", error);
       toast.error(`Error: ${error.message}`);
     }
   };
