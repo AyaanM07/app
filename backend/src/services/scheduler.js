@@ -77,9 +77,11 @@ const postQuestionForUser = async (user) => {
     for (const classConfig of activeConfigs) {
       // Get the starting question number from the class config
       const startingQuestion = classConfig.startingQuestion || 1;
-      
+
       // Add debug logging
-      console.log(`Posting question for ${classConfig.grade} starting from question #${startingQuestion}`);
+      console.log(
+        `Posting question for ${classConfig.grade} starting from question #${startingQuestion}`,
+      );
 
       const classroomIds = [
         classConfig.group6Code,
@@ -88,14 +90,17 @@ const postQuestionForUser = async (user) => {
       if (classroomIds.length === 0) continue;
 
       // Log the payload being sent
-      console.log("Sending payload:", JSON.stringify({
-        action: "postQuestions",
-        data: {
-          folderId: classConfig.folderId,
-          classroomIds: classroomIds,
-          startingQuestion: startingQuestion,
-        },
-      }));
+      console.log(
+        "Sending payload:",
+        JSON.stringify({
+          action: "postQuestions",
+          data: {
+            folderId: classConfig.folderId,
+            classroomIds: classroomIds,
+            startingQuestion: startingQuestion,
+          },
+        }),
+      );
 
       const response = await fetch(`${API_BASE_URL}/api/questions`, {
         method: "POST",
@@ -116,31 +121,42 @@ const postQuestionForUser = async (user) => {
       console.log(`Result for ${classConfig.grade}:`, result);
 
       if (result.success) {
+        // Log the form title we're about to save
+        console.log(
+          `Updating lastPostedForm for ${classConfig.grade} to:`,
+          result.formTitle,
+        );
+
         // If the GAS script handles incrementation, we'll trust it did so correctly
         // We should still update our local state to match
-        if (result.nextQuestionNumber) {
-          // Store the latest form title if provided
-          const latestFormTitle = result.formTitle || `Question ${startingQuestion}`;
-          
-          // Update both the next question number and the latest form title
-          await User.updateOne(
-            {
-              _id: user._id,
-              "settings.classConfigs.grade": classConfig.grade,
+        const latestFormTitle =
+          result.formTitle || `Question ${startingQuestion}`;
+
+        // Update both the next question number and the latest form title
+        const updateResult = await User.updateOne(
+          {
+            _id: user._id,
+            "settings.classConfigs.grade": classConfig.grade,
+          },
+          {
+            $set: {
+              "settings.classConfigs.$.startingQuestion":
+                result.nextQuestionNumber,
+              "settings.classConfigs.$.lastPostedForm": latestFormTitle,
             },
-            {
-              $set: {
-                "settings.classConfigs.$.startingQuestion": result.nextQuestionNumber,
-                "settings.classConfigs.$.lastPostedForm": latestFormTitle
-              },
-            },
-          );
-        }
+          },
+        );
+
+        // Log the update result
+        console.log(
+          `Database update result for ${classConfig.grade}:`,
+          updateResult,
+        );
 
         results.push({
           grade: classConfig.grade,
           success: true,
-          formTitle: result.formTitle
+          formTitle: result.formTitle,
         });
       } else {
         results.push({
@@ -198,14 +214,17 @@ const postEmailsForUser = async (user) => {
     }
 
     // Log what we're sending
-    console.log("Email posting payload:", JSON.stringify({
-      action: "postEmails",
-      data: {
-        folderIds: folderIds,
-        sheetId: sheetsId,
-        startingQuestions: startingQuestions, // Include starting questions
-      }
-    }));
+    console.log(
+      "Email posting payload:",
+      JSON.stringify({
+        action: "postEmails",
+        data: {
+          folderIds: folderIds,
+          sheetId: sheetsId,
+          startingQuestions: startingQuestions, // Include starting questions
+        },
+      }),
+    );
 
     const response = await fetch(`${API_BASE_URL}/api/questions`, {
       method: "POST",
@@ -223,11 +242,13 @@ const postEmailsForUser = async (user) => {
     });
 
     const result = await response.json();
-    
+
     // If the email posting returns updated question numbers, update them in the database
     if (result.success && result.updatedQuestions) {
       // Update each class's starting question if it was changed
-      for (const [grade, newNumber] of Object.entries(result.updatedQuestions)) {
+      for (const [grade, newNumber] of Object.entries(
+        result.updatedQuestions,
+      )) {
         await User.updateOne(
           {
             _id: user._id,
@@ -237,11 +258,11 @@ const postEmailsForUser = async (user) => {
             $set: {
               "settings.classConfigs.$.startingQuestion": newNumber,
             },
-          }
+          },
         );
       }
     }
-    
+
     return result;
   } catch (error) {
     console.error(`Error posting emails for user ${user.email}:`, error);

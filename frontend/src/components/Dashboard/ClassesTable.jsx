@@ -18,7 +18,8 @@ const ClassesTable = () => {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isAddClassModalOpen, setIsAddClassModalOpen] = useState(false);
   const { user, updateSettings } = useAuthStore();
-  const { formsByClass, fetchFormsByClass, getTodaysFormForClass } = useFormsStore();
+  const { formsByClass, fetchFormsByClass, getTodaysFormForClass } =
+    useFormsStore();
   const navigate = useNavigate();
 
   // Load classes from user settings
@@ -34,22 +35,24 @@ const ClassesTable = () => {
         .map((config, index) => {
           // Get today's form for the class if available
           const todayForm = getTodaysFormForClass(config.grade);
-          
+
           return {
             id: index + 1,
             name: config.grade,
             folderId: config.folderId || "",
             // Use the last posted form title if available, otherwise use today's form or default text
-            email: config.lastPostedForm || (todayForm ? `${todayForm.name}` : "No form available"),
-            formUrl: todayForm ? todayForm.url : null
+            email:
+              config.lastPostedForm ||
+              (todayForm ? `${todayForm.name}` : "No form available"),
+            formUrl: todayForm ? todayForm.url : null,
           };
         });
 
       setClasses(sortedClasses);
       setFilteredClasses(sortedClasses);
-      
+
       // Fetch forms for each class
-      sortedClasses.forEach(classItem => {
+      sortedClasses.forEach((classItem) => {
         if (classItem.folderId && !formsByClass[classItem.name]) {
           fetchFormsByClass(classItem.name, classItem.folderId);
         }
@@ -175,12 +178,12 @@ const ClassesTable = () => {
     event.stopPropagation();
     navigate(`/forms/${classItem.name}`);
   };
-  
+
   // Handle form click - open in new tab
   const handleFormClick = (classItem, event) => {
     event.stopPropagation();
     if (classItem.formUrl) {
-      window.open(classItem.formUrl, '_blank');
+      window.open(classItem.formUrl, "_blank");
     }
   };
 
@@ -265,9 +268,11 @@ const ClassesTable = () => {
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div 
-                      className={`text-sm ${classItem.formUrl ? 'text-blue-300 cursor-pointer hover:underline' : 'text-gray-300'}`}
-                      onClick={(e) => classItem.formUrl && handleFormClick(classItem, e)}
+                    <div
+                      className={`text-sm ${classItem.formUrl ? "text-blue-300 cursor-pointer hover:underline" : "text-gray-300"}`}
+                      onClick={(e) =>
+                        classItem.formUrl && handleFormClick(classItem, e)
+                      }
                     >
                       {classItem.email}
                     </div>
