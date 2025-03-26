@@ -124,13 +124,12 @@ const postQuestionForUser = async (user) => {
         // Log the form title we're about to save
         console.log(
           `Updating lastPostedForm for ${classConfig.grade} to:`,
-          result.formTitle,
+          result.title,
         );
 
         // If the GAS script handles incrementation, we'll trust it did so correctly
         // We should still update our local state to match
-        const latestFormTitle =
-          result.formTitle || `Question ${startingQuestion}`;
+        const latestFormTitle = result.title || `Question ${startingQuestion}`;
 
         // Update both the next question number and the latest form title
         const updateResult = await User.updateOne(
@@ -140,8 +139,7 @@ const postQuestionForUser = async (user) => {
           },
           {
             $set: {
-              "settings.classConfigs.$.startingQuestion":
-                result.nextQuestionNumber,
+              "settings.classConfigs.$.startingQuestion": result.questionNumber,
               "settings.classConfigs.$.lastPostedForm": latestFormTitle,
             },
           },
@@ -156,7 +154,7 @@ const postQuestionForUser = async (user) => {
         results.push({
           grade: classConfig.grade,
           success: true,
-          formTitle: result.formTitle,
+          formTitle: result.title,
         });
       } else {
         results.push({
