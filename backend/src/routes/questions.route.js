@@ -1,6 +1,7 @@
 import express from "express";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
+import { Form } from "../models/form.data.js";
 
 const router = express.Router();
 dotenv.config();
@@ -8,8 +9,8 @@ dotenv.config();
 // Get the URLs for different GAS scripts
 const GOOGLE_SCRIPT_URL_SCHEDULER = process.env.GOOGLE_SCRIPT_URL_SCHEDULER;
 const GOOGLE_SCRIPT_URL_FORMS = process.env.GOOGLE_SCRIPT_URL_FORMS;
-// Add this constant at the top with your other constants
-const GOOGLE_SCRIPT_URL_FORM_EXTRACTOR = process.env.GOOGLE_SCRIPT_URL_FORM_EXTRACTOR;
+const GOOGLE_SCRIPT_URL_FORM_EXTRACTOR =
+  process.env.GOOGLE_SCRIPT_URL_FORM_EXTRACTOR;
 
 router.post("/", async (req, res) => {
   try {
@@ -87,7 +88,6 @@ router.post("/", async (req, res) => {
     const formData = new URLSearchParams();
     formData.append("payload", JSON.stringify(req.body));
 
-    console.log(`Sending request to ${action} script...`);
     const response = await fetch(scriptUrl, {
       method: "POST",
       body: formData,
@@ -97,7 +97,6 @@ router.post("/", async (req, res) => {
     });
 
     const responseText = await response.text();
-    console.log("Raw response from Google Script:", responseText);
 
     try {
       // Try to parse as JSON
@@ -126,23 +125,20 @@ router.post("/", async (req, res) => {
 router.get("/forms", async (req, res) => {
   try {
     const { folderId } = req.query;
-    
+
     if (!folderId) {
       return res.status(400).json({
         success: false,
-        error: "Missing required folderId parameter"
+        error: "Missing required folderId parameter",
       });
     }
-    
+
     // Use the same Google Script URL but with a get request
     const scriptUrl = `${GOOGLE_SCRIPT_URL_FORMS}?folderId=${folderId}`;
-    
-    console.log(`Fetching forms from folder: ${folderId}`);
+
     const response = await fetch(scriptUrl);
-    
     const responseText = await response.text();
-    console.log("Raw response from Google Script:", responseText);
-    
+
     try {
       // Try to parse as JSON
       const jsonData = JSON.parse(responseText);
@@ -151,55 +147,83 @@ router.get("/forms", async (req, res) => {
       return res.status(500).json({
         success: false,
         error: "Invalid response from Google Script",
-        data: responseText
+        data: responseText,
       });
     }
   } catch (error) {
     console.error("Error fetching forms:", error);
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
 
-// Update or add a route to use this new script
+// Simplified route to use form extractor script with caching
 router.get("/forms-extract", async (req, res) => {
   try {
-    const { folderId } = req.query;
-    
+    const { folderId, refresh } = req.query;
+
     if (!folderId) {
       return res.status(400).json({
         success: false,
-        error: "Missing required folderId parameter"
+        error: "Missing required folderId parameter",
       });
     }
-    
-    // Use the new script URL
+
+    // check cache first if not forcing refresh
+    if (refresh !== "true") {
+      const cachedData = await Form.findOne({ folderId }).lean();
+
+      // if we have cached data, use it
+      if (cachedData && cachedData.forms) {
+        return res.json({
+          success: true,
+          forms: cachedData.forms,
+          fromCache: true,
+        });
+      }
+    }
+
+    // cache miss or refresh requested, fetch from google script
     const scriptUrl = `${GOOGLE_SCRIPT_URL_FORM_EXTRACTOR}?folderId=${folderId}`;
-    
-    console.log(`Extracting forms from folder: ${folderId}`);
     const response = await fetch(scriptUrl);
-    
     const responseText = await response.text();
-    console.log("Raw response from Form Extractor Script:", responseText);
-    
+
     try {
-      // Try to parse as JSON
       const jsonData = JSON.parse(responseText);
-      return res.json(jsonData);
+
+      // update cache
+      await Form.findOneAndUpdate(
+        { folderId },
+        {
+          forms: jsonData.forms,
+          lastFetched: new Date(),
+        },
+        {
+          upsert: true,
+          new: true,
+          setDefaultsOnInsert: true,
+        },
+      );
+
+      return res.json({
+        success: true,
+        forms: jsonData.forms,
+        fromCache: false,
+      });
     } catch (e) {
       return res.status(500).json({
         success: false,
         error: "Invalid response from Form Extractor Script",
-        data: responseText
+        data: responseText,
       });
     }
   } catch (error) {
     console.error("Error extracting forms:", error);
     return res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });

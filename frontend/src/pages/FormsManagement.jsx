@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate, useParams } from 'react-router-dom';
-import { useAuthStore } from '../store/authStore';
-import { useFormsStore } from '../store/formsStore';
-import Header from '../components/common/Header';
-import { ArrowLeft, RefreshCw, ExternalLink } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuthStore } from "../store/authStore";
+import { useFormsStore } from "../store/formsStore";
+import Header from "../components/common/Header";
+import { ArrowLeft, RefreshCw, ExternalLink } from "lucide-react";
+import toast from "react-hot-toast";
 
 const FormsManagement = () => {
   const { className } = useParams();
@@ -13,16 +13,16 @@ const FormsManagement = () => {
   const { user } = useAuthStore();
   const { formsByClass, fetchFormsByClass, isLoading } = useFormsStore();
   const [sortedForms, setSortedForms] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Get folder ID for this class
   const getFolderId = () => {
     if (!user?.settings?.classConfigs) return null;
-    
+
     const classConfig = user.settings.classConfigs.find(
-      config => config.grade === className
+      (config) => config.grade === className,
     );
-    
+
     return classConfig?.folderId || null;
   };
 
@@ -38,14 +38,14 @@ const FormsManagement = () => {
   useEffect(() => {
     if (formsByClass[className]?.forms) {
       const forms = [...formsByClass[className].forms];
-      
+
       // Extract question numbers and sort
       forms.sort((a, b) => {
         const numA = extractQuestionNumber(a.name);
         const numB = extractQuestionNumber(b.name);
         return numA - numB;
       });
-      
+
       setSortedForms(forms);
     }
   }, [formsByClass, className]);
@@ -57,52 +57,51 @@ const FormsManagement = () => {
   };
 
   // Filter forms based on search term
-  const filteredForms = sortedForms.filter(form => 
-    form.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredForms = sortedForms.filter((form) =>
+    form.name.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  // Refresh forms from Google Drive
-  const refreshForms = async () => {
+  // Handle refresh click
+  const handleRefresh = async () => {
     const folderId = getFolderId();
-    if (!folderId) {
-      toast.error('No folder ID configured for this class');
-      return;
+    if (folderId) {
+      toast.promise(fetchFormsByClass(className, folderId, true), {
+        loading: "Refreshing forms...",
+        success: "Forms refreshed successfully",
+        error: "Failed to refresh forms",
+      });
     }
-    
-    toast.promise(
-      fetchFormsByClass(className, folderId),
-      {
-        loading: 'Refreshing forms...',
-        success: 'Forms refreshed successfully',
-        error: 'Failed to refresh forms'
-      }
-    );
   };
 
   // Handle form click - open in new tab
   const openForm = (url) => {
-    window.open(url, '_blank');
+    window.open(url, "_blank");
   };
 
   return (
-    <div className="flex-1 overflow-auto relative z-10">
-      <Header title="Forms Management" />
-
-      <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
-        <motion.div
-          className="mb-6"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-        >
+    <div className="min-h-screen bg-gray-900 text-white">
+      <Header />
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="p-2 hover:bg-gray-700 rounded-full transition-colors"
+            >
+              <ArrowLeft size={24} />
+            </button>
+            <h1 className="text-2xl font-bold">{className} Forms</h1>
+          </div>
           <button
-            className="flex items-center text-gray-300 hover:text-white"
-            onClick={() => navigate('/')}
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className={`p-2 hover:bg-gray-700 rounded-full transition-colors ${
+              isLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
           >
-            <ArrowLeft size={18} className="mr-2" />
-            Back to Dashboard
+            <RefreshCw size={24} className={isLoading ? "animate-spin" : ""} />
           </button>
-        </motion.div>
+        </div>
 
         <motion.div
           className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
@@ -121,7 +120,7 @@ const FormsManagement = () => {
                 </p>
               )}
             </div>
-            
+
             <div className="flex flex-col md:flex-row gap-3">
               <input
                 type="text"
@@ -130,21 +129,13 @@ const FormsManagement = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
-              
-              <button
-                onClick={refreshForms}
-                className="bg-blue-500 hover:bg-blue-600 text-white rounded-lg px-4 py-2 flex items-center"
-                disabled={isLoading}
-              >
-                <RefreshCw size={18} className={`mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                {isLoading ? 'Refreshing...' : 'Refresh Forms'}
-              </button>
             </div>
           </div>
 
           {!getFolderId() && (
             <div className="bg-yellow-800 bg-opacity-30 border border-yellow-700 text-yellow-200 p-4 rounded-lg mb-6">
-              No folder ID configured for this class. Please set up a folder ID in the class settings.
+              No folder ID configured for this class. Please set up a folder ID
+              in the class settings.
             </div>
           )}
 
@@ -155,7 +146,9 @@ const FormsManagement = () => {
             </div>
           ) : filteredForms.length === 0 ? (
             <div className="text-center py-8 text-gray-400">
-              {searchTerm ? 'No forms matching your search' : 'No forms found in this folder'}
+              {searchTerm
+                ? "No forms matching your search"
+                : "No forms found in this folder"}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -199,7 +192,7 @@ const FormsManagement = () => {
             </div>
           )}
         </motion.div>
-      </main>
+      </div>
     </div>
   );
 };

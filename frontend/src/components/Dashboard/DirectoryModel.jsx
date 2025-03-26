@@ -66,19 +66,22 @@ const DirectoryModal = ({ classData, onClose }) => {
       // If starting question number has changed, send request to update it in GAS
       if (currentStartingQuestion !== newStartingQuestion) {
         // Send request to update the starting question number
-        const response = await fetch("/api/questions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            action: "setStartingNumber",
-            data: {
-              grade: classData.name,
-              number: newStartingQuestion,
+        const response = await fetch(
+          `${import.meta.env.VITE_BACKEND_URL}/api/questions`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
             },
-          }),
-        });
+            body: JSON.stringify({
+              action: "setStartingNumber",
+              data: {
+                grade: classData.name,
+                number: newStartingQuestion,
+              },
+            }),
+          },
+        );
 
         const result = await response.json();
         if (!result.success) {
@@ -110,7 +113,7 @@ const DirectoryModal = ({ classData, onClose }) => {
           group6Code,
           group4Code,
           startingQuestion: newStartingQuestion, // Use the new starting question
-          lastPostedForm: currentConfig?.lastPostedForm || "No form posted yet" // Preserve or initialize
+          lastPostedForm: currentConfig?.lastPostedForm || "No form posted yet", // Preserve or initialize
         };
       } else {
         // For lower grades, store the single code in group6Code field
@@ -120,7 +123,7 @@ const DirectoryModal = ({ classData, onClose }) => {
           group6Code: singleClassCode,
           group4Code: "", // Empty for lower grades
           startingQuestion: newStartingQuestion, // Use the new starting question
-          lastPostedForm: currentConfig?.lastPostedForm || "No form posted yet" // Preserve or initialize
+          lastPostedForm: currentConfig?.lastPostedForm || "No form posted yet", // Preserve or initialize
         };
       }
 
@@ -133,19 +136,16 @@ const DirectoryModal = ({ classData, onClose }) => {
       // Update settings in database
       await updateSettings(currentSettings);
       toast.success(`Settings for ${classData.name} saved successfully`);
-      
+
       // After successful save, fetch forms if folder ID is provided
       if (folderId) {
-        toast.promise(
-          fetchFormsByClass(classData.name, folderId),
-          {
-            loading: 'Fetching forms...',
-            success: 'Forms fetched successfully',
-            error: 'Failed to fetch forms'
-          }
-        );
+        toast.promise(fetchFormsByClass(classData.name, folderId), {
+          loading: "Fetching forms...",
+          success: "Forms fetched successfully",
+          error: "Failed to fetch forms",
+        });
       }
-      
+
       // Close the modal
       onClose();
     } catch (error) {
@@ -172,13 +172,16 @@ const DirectoryModal = ({ classData, onClose }) => {
       // Show a loading toast that we can update later
       const toastId = toast.loading("Posting questions...");
 
-      const response = await fetch("/api/questions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/questions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -222,8 +225,8 @@ const DirectoryModal = ({ classData, onClose }) => {
             folderIds[config.grade] = config.folderId;
             startingQuestions[config.grade] = config.startingQuestion || 1; // Store the starting question
           } else {
-            folderIds[config.grade] = ""; 
-            startingQuestions[config.grade] = config.startingQuestion || 1; 
+            folderIds[config.grade] = "";
+            startingQuestions[config.grade] = config.startingQuestion || 1;
           }
         });
       }
@@ -251,13 +254,16 @@ const DirectoryModal = ({ classData, onClose }) => {
       // Show a loading toast that we can update later
       const toastId = toast.loading("Sending emails...");
 
-      const response = await fetch("/api/questions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/questions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
         },
-        body: JSON.stringify(payload),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -270,28 +276,28 @@ const DirectoryModal = ({ classData, onClose }) => {
         toast.success(result.message || "Emails sent successfully!", {
           id: toastId,
         });
-        
+
         // If the API returns updated question numbers, update them in your state
         if (result.updatedQuestions) {
           // Create a copy of the current settings to update
           const updatedSettings = JSON.parse(JSON.stringify(user.settings));
-          
+
           // Update each class's starting question if it was changed
           for (const grade in result.updatedQuestions) {
             const classConfigIndex = updatedSettings.classConfigs.findIndex(
-              config => config.grade === grade
+              (config) => config.grade === grade,
             );
-            
+
             if (classConfigIndex !== -1) {
-              updatedSettings.classConfigs[classConfigIndex].startingQuestion = 
+              updatedSettings.classConfigs[classConfigIndex].startingQuestion =
                 result.updatedQuestions[grade];
             }
           }
-          
+
           // Update the settings in your store
           await updateSettings(updatedSettings);
         }
-        
+
         onClose();
       } else {
         throw new Error(result.error || "Failed to send emails");

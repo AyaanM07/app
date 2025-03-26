@@ -1,9 +1,7 @@
 import axios from "axios";
 import { create } from "zustand";
 
-const API_URL = import.meta.env.DEV
-  ? `http://localhost:4545/api/auth`
-  : `https://some-backend.rex.wf/api/auth`;
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api/auth`;
 
 axios.defaults.withCredentials = true;
 

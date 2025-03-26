@@ -94,20 +94,23 @@ const P1toGoogleForms = () => {
     try {
       const toastId = toast.loading("Converting PDFs to Google Forms...");
 
-      const response = await fetch("/api/questions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          action: "convertPDFsToForms",
-          data: {
-            sourceFolderId: folders.sourceFolderId,
-            markschemeFolderId: folders.markschemeFolderId,
-            targetFolderId: folders.targetFolderId,
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/questions`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        }),
-      });
+          body: JSON.stringify({
+            action: "convertPDFsToForms",
+            data: {
+              sourceFolderId: folders.sourceFolderId,
+              markschemeFolderId: folders.markschemeFolderId,
+              targetFolderId: folders.targetFolderId,
+            },
+          }),
+        },
+      );
 
       const result = await response.json();
 

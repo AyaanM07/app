@@ -90,7 +90,7 @@ const SettingsModal = ({ onClose }) => {
         skipDates,
       };
 
-      await axios.put("/api/auth/settings", {
+      await axios.put(`${import.meta.env.VITE_BACKEND_URL}/api/auth/settings`, {
         settings: currentSettings,
       });
 

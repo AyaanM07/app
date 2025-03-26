@@ -62,17 +62,22 @@ const TestBuilder = () => {
   useEffect(() => {
     const handleBeforeUnload = (e) => {
       // Only show warning if they've started working
-      if (test.title || customSelections.length > 0 || pastedSelections.length > 0) {
-        const message = "You have unsaved changes. Are you sure you want to leave?";
+      if (
+        test.title ||
+        customSelections.length > 0 ||
+        pastedSelections.length > 0
+      ) {
+        const message =
+          "You have unsaved changes. Are you sure you want to leave?";
         e.returnValue = message;
         return message;
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
     };
   }, [test, customSelections, pastedSelections]);
 
@@ -320,10 +325,10 @@ const TestBuilder = () => {
   const handleAreaSelections = (selections) => {
     // If selections array is empty, it means all selections for this page were removed
     // We need to get the page number from the event or context
-    
+
     // Get current page number - either from first selection or from a different source
     let currentPageNumber;
-    
+
     if (selections.length > 0) {
       currentPageNumber = selections[0]?.pageNumber;
     } else {
@@ -331,19 +336,19 @@ const TestBuilder = () => {
       // This should be available in the selections parameter from PDFSelectionTool
       currentPageNumber = selections.pageNumber;
     }
-    
+
     if (!currentPageNumber) {
       console.error("Could not determine page number for selection update");
       return;
     }
-    
+
     // Keep all selections from other pages, and update only the current page's selections
     setCustomSelections((prevSelections) => {
       // Remove previous selections for this page
       const otherPageSelections = prevSelections.filter(
-        (sel) => sel.pageNumber !== currentPageNumber
+        (sel) => sel.pageNumber !== currentPageNumber,
       );
-      
+
       // Add the new selections for the current page (which might be an empty array)
       return [...otherPageSelections, ...selections];
     });
@@ -542,7 +547,7 @@ const TestBuilder = () => {
       // Send to backend for processing
       const response = await axios({
         method: "post",
-        url: "/api/tests/preview",
+        url: `${import.meta.env.VITE_BACKEND_URL}/api/tests/preview`,
         data: formData,
         responseType: "blob",
         headers: {
@@ -590,11 +595,14 @@ const TestBuilder = () => {
     setIsSaving(true);
 
     try {
-      const response = await axios.post("/api/tests", {
-        title: test.title,
-        description: test.description,
-        questions: test.questions,
-      });
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/tests`,
+        {
+          title: test.title,
+          description: test.description,
+          questions: test.questions,
+        },
+      );
 
       if (response.data.success) {
         const testId = response.data.data._id;
@@ -611,11 +619,15 @@ const TestBuilder = () => {
           });
           formData.append("selectionData", selectionData);
 
-          await axios.post(`/api/tests/${testId}/upload-pdf`, formData, {
-            headers: {
-              "Content-Type": "multipart/form-data",
+          await axios.post(
+            `${import.meta.env.VITE_BACKEND_URL}/api/tests/${testId}/upload-pdf`,
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
             },
-          });
+          );
         }
 
         toast.success("Test created successfully!");
