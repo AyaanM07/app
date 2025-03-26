@@ -309,7 +309,8 @@ export const initializeScheduler = () => {
     }
   };
 
-  // run every 30 seconds
-  setInterval(runScheduler, 30000);
-  console.log("Question scheduler initialized (running every 30 seconds)");
+  // run every 31 seconds
+  // lazy fix since sometimes it'll run twice in a minute
+  setInterval(runScheduler, 31000);
+  console.log("Question scheduler initialized (running every 31 seconds)");
 };
