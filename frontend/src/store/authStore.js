@@ -7,12 +7,34 @@ const API_URL = import.meta.env.DEV
 
 axios.defaults.withCredentials = true;
 
+// add interceptor to handle 401s
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // clear auth state on 401
+      useAuthStore.getState().clearAuth();
+    }
+    return Promise.reject(error);
+  },
+);
+
 export const useAuthStore = create((set) => ({
   user: null,
   isAuthenticated: false,
   error: null,
   isLoading: false,
   isCheckingAuth: true,
+
+  clearAuth: () => {
+    set({
+      user: null,
+      isAuthenticated: false,
+      error: null,
+      isLoading: false,
+      isCheckingAuth: false,
+    });
+  },
 
   signup: async (email, password, name) => {
     set({ isLoading: true, error: null });
@@ -22,24 +44,21 @@ export const useAuthStore = create((set) => ({
         password,
         name,
       });
-      // Update all related state in one batch
-      set((state) => ({
-        ...state,
+      set({
         isAuthenticated: true,
         user: response.data.data,
         error: null,
         isLoading: false,
         isCheckingAuth: false,
-      }));
+      });
     } catch (error) {
-      set((state) => ({
-        ...state,
+      set({
         isAuthenticated: false,
         user: null,
         error: error.response?.data?.message || "Error signing up",
         isLoading: false,
         isCheckingAuth: false,
-      }));
+      });
       throw error;
     }
   },
@@ -52,25 +71,22 @@ export const useAuthStore = create((set) => ({
         password,
       });
       if (response.data.success) {
-        // Update all related state in one batch
-        set((state) => ({
-          ...state,
+        set({
           isAuthenticated: true,
           user: response.data.data,
           error: null,
           isLoading: false,
           isCheckingAuth: false,
-        }));
+        });
       }
     } catch (error) {
-      set((state) => ({
-        ...state,
+      set({
         isAuthenticated: false,
         user: null,
         error: error.response?.data?.message || "Error logging in",
         isLoading: false,
         isCheckingAuth: false,
-      }));
+      });
       throw error;
     }
   },
@@ -79,15 +95,17 @@ export const useAuthStore = create((set) => ({
     set({ isLoading: true, error: null });
     try {
       await axios.post(`${API_URL}/logout`);
+    } catch (error) {
+      console.error("Error during logout:", error);
+    } finally {
+      // always clear auth state regardless of logout API success
       set({
         user: null,
         isAuthenticated: false,
         error: null,
         isLoading: false,
+        isCheckingAuth: false,
       });
-    } catch (error) {
-      set({ error: "Error logging out", isLoading: false });
-      throw error;
     }
   },
 
@@ -99,19 +117,21 @@ export const useAuthStore = create((set) => ({
         user: response.data.data,
         isAuthenticated: true,
         isCheckingAuth: false,
+        error: null,
       });
     } catch (error) {
       set({
+        user: null,
+        isAuthenticated: false,
         error: error.response?.data?.message || "Error checking auth",
         isCheckingAuth: false,
-        isAuthenticated: false,
       });
     }
   },
 
   updateSettings: async (settings) => {
     try {
-      set({ isLoading: true });
+      set({ isLoading: true, error: null });
       const response = await axios.put(`${API_URL}/settings`, { settings });
 
       if (response.data.success) {
@@ -122,12 +142,16 @@ export const useAuthStore = create((set) => ({
             settings: response.data.user.settings,
           },
           isLoading: false,
+          error: null,
         }));
         return true;
       }
     } catch (error) {
       console.error("Error updating settings:", error);
-      set({ error: "Failed to update settings", isLoading: false });
+      set({
+        error: "Failed to update settings",
+        isLoading: false,
+      });
       throw error;
     }
   },
