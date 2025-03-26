@@ -6,11 +6,12 @@ import { Form } from "../models/form.data.js";
 const router = express.Router();
 dotenv.config();
 
-// Get the URLs for different GAS scripts
-const GOOGLE_SCRIPT_URL_SCHEDULER = process.env.GOOGLE_SCRIPT_URL_SCHEDULER;
-const GOOGLE_SCRIPT_URL_FORMS = process.env.GOOGLE_SCRIPT_URL_FORMS;
+const GOOGLE_SCRIPT_URL_SCHEDULER =
+  "https://script.google.com/macros/s/AKfycbzRxT6g0_TIy71tfsSemISsv4n6PUcBUeMuQQ3j8ajXJR5A-BB4PR6g5SdFrcRQfZTjNA/exec";
+const GOOGLE_SCRIPT_URL_FORMS =
+  "https://script.google.com/macros/s/AKfycbxPBZuYLB9VY-knbQEEa9DTRkG_RSpK6p-W2PCHKcmZ4B_l5U7WrZarWIdM2mi_l9Fm/exec";
 const GOOGLE_SCRIPT_URL_FORM_EXTRACTOR =
-  process.env.GOOGLE_SCRIPT_URL_FORM_EXTRACTOR;
+  "https://script.google.com/macros/s/AKfycbwI3_RnnEXUpIqYCi1w6IwR9VHkJr7ngyvZoARCwjGh1UNl062FYaYnQv6xLKNmjGx0EA/exec";
 
 router.post("/", async (req, res) => {
   try {
